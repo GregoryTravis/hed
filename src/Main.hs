@@ -109,7 +109,7 @@ framebufferDrawHstrip (FrameBuffer (w, h)) (Hstrip text (start, length) (x, y))
 renderDocument fb@(FrameBuffer (w, h)) (ViewPos vx vy) (Document lines) = do
   mapM_ drawRow (zip [0..] (take h (drop vy (V.toList lines))))
   where drawRow (y, text) = do framebufferDrawHstrip fb (Hstrip text (vx, w) (0, y))
-                               framebufferDrawHstrip fb (Hstrip blankLine (0, w-(T.length text)) (T.length text, y))
+                               framebufferDrawHstrip fb (Hstrip blankLine (0, w-(T.length text)) (max 0 (T.length text - vx), y))
         blankLine = T.pack (replicate w ' ')
 
 render fb (EditorState _ (ViewState vp cp) doc) = do
