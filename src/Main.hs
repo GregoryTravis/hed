@@ -2,6 +2,7 @@ module Main where
 
 import Control.Concurrent (threadDelay)
 import Control.Exception (finally, catch, IOException)
+import qualified Data.Text as T
 import System.Console.ANSI
 import System.IO
 import System.Posix.IO (fdRead, stdInput)
@@ -10,22 +11,19 @@ import System.Posix.Terminal
 
 import Util
 
-box w h c = replicate h (replicate w c)
+box w h c = replicate h (T.pack (replicate w c))
 
 drawBox (startX, startY) box = do
   mapM_ drawRow (zip [0..] box)
-  where drawRow (y, row) = do
-          mapM_ drawChar (zip [0..] row)
-          where drawChar (x, c) = do
-                  setCursorPosition (startY + y) (startX + x)
-                  putStr [c]
+  where drawRow (y, row) = do setCursorPosition (startY + y) startX
+                              putStr (T.unpack row)
 
 fillScreen = do
   Just (h, w) <- getTerminalSize
   drawBox (0, 0) (box (w-0) (h-1) 'x')
   drawBox (0, (h-1)) (box (w-0) 1 'y')
 
-speedTest = time "speedTest" $ mapM_ (\_ -> fillScreen) [0..9]
+speedTest = time "speedTest" $ mapM_ (\_ -> fillScreen) [0..99]
 
 -- Taken from https://stackoverflow.com/questions/23068218/haskell-read-raw-keyboard-input/36297897#36297897
 withRawInput :: Int -> Int -> IO a -> IO a
@@ -62,8 +60,10 @@ main = do
   putStrLn "Default colors."
   Just (h, w) <- getTerminalSize
   putStrLn (show (w, h))
-  fillScreen
+  --fillScreen
+  --drawBox (3, 3) (box 8 8 'r')
   setCursorPosition 0 0
+  speedTest
   let loop = do
         c <- hGetChar stdin
         setCursorPosition 0 0
