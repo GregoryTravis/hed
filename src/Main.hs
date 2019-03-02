@@ -10,7 +10,7 @@ import Data.Text (Text, pack, unpack)
 import qualified Data.Vector as V
 import Control.Monad.State
 import System.Console.ANSI
-import qualified System.IO as IO
+import System.IO
 import System.Posix.IO (fdRead, stdInput)
 import System.Posix.Terminal
 
@@ -52,53 +52,94 @@ withRawInput vmin vtime application = do
    - from becoming borked if the application halts with an exception
    -}
   application 
-    `finally` setTerminalAttributes stdInput oldTermSettings Immediately
+    `finally` do setTerminalAttributes stdInput oldTermSettings Immediately
+                 writeFile "asdf" "koo"
+                 msp "ASDFASDF"
+                 return ()
 
-data FileLines = FileLines (V.Vector Text) deriving Show
+data Document = Document (V.Vector Text) deriving Show
 
-drawFileLines topLine (FileLines lines) = do
-  mapM_ drawRow (zip [0..] (drop topLine (V.toList lines)))
-  where drawRow (y, row) = do setCursorPosition y 0
-                              putStr (unpack row)
-
-readFileAsFL :: String -> IO FileLines
-readFileAsFL filename = do
-  entireFile <- IO.readFile filename
+readFileAsDoc :: String -> IO Document
+readFileAsDoc filename = do
+  entireFile <- readFile filename
   let foo :: [Text]
       foo = T.splitOn "\n" (T.pack entireFile)
-  return $ FileLines $ V.fromList $ T.splitOn "\n" (T.pack entireFile)
+  return $ Document $ V.fromList $ T.splitOn "\n" (T.pack entireFile)
 
-screen = do
-  IO.hSetBuffering IO.stdout IO.NoBuffering
-  setSGR [SetColor Foreground Vivid Red]
-  setSGR [SetColor Background Vivid Blue]
-  clearScreen
-  setCursorPosition 3 5
-  putStrLn "Red-On-Blue"
-  setSGR [Reset]  -- Reset to default colour scheme
-  putStrLn "Default colors."
+-- Position of the cursor relative to the screen origin
+data CursorPos = CursorPos Int Int
+-- Position of the text character at the screen origin
+data ViewPos = ViewPos Int Int
+
+data ViewState = ViewState ViewPos CursorPos
+
+type Generation = Int
+
+-- Int: generation
+data EditorState = EditorState Generation ViewState Document
+
+generationOf (EditorState generation _ _) = generation
+
+readFileInitState filename = do
+  doc <- readFileAsDoc filename
+  return $ EditorState 0 (ViewState (ViewPos 0 0) (CursorPos 0 0)) doc
+
+readKeystrokes :: IO [Char]
+readKeystrokes = do
+  ready <- hReady stdin
+  --() <- if ready then msp ("ready", ready) else return ()
+  if ready then do c <- hGetChar stdin
+                   --msp ("lip", c)
+                   rest <- readKeystrokes
+                   return (c:rest)
+          else return []
+
+debug s = do
   Just (h, w) <- getTerminalSize
-  putStrLn (show (w, h))
-  --fillScreen
-  --drawBox (3, 3) (box 8 8 'r')
-  setCursorPosition 0 0
-  --speedTest
-  fl <- readFileAsFL "sample.txt"
-  msp "whey"
-  msp fl
-  let loop topLine = do
-        c <- IO.hGetChar IO.stdin
-        clearScreen
-        setCursorPosition 0 0
-        drawFileLines topLine fl
-        let topLine' = case (ord c) of 107 -> topLine + 1
-                                       106 -> topLine - 1
-                                       _ -> topLine
-        putStrLn (show (ord c))
-        putStrLn (show topLine)
-        loop topLine'
-   in withRawInput 0 1 $ loop 0
-  --threadDelay $ 2 * 1000000
+  setCursorPosition (h-1) 0
+  putStr s
+
+renderDocument (ViewPos vx vy) (Document lines) = do
+  mapM_ drawRow (zip [0..] (drop vy (V.toList lines)))
+  where drawRow (y, row) = do setCursorPosition y 0
+                              putStr (drop vx (unpack row))
+
+render (EditorState _ (ViewState vp cp) doc) = do
+  clearScreen
+  renderDocument vp doc
+
+updateTerminalSize (w, h) = do
+  ts <- getTerminalSize
+  return $ case ts of Just (h, w) -> (w, h)
+                      Nothing -> (w, h)
+
+updateEditorState es keystrokes = es
+
+editorLoop es generation (w, h) = do
+  --msp "loop"
+  --(w, h) <- updateTerminalSize (w, h)
+  keystrokes <- readKeystrokes
+  --let keystrokes = [] :: [Char]
+  () <- if ((length keystrokes) == 0) then (return ()) else (debug keystrokes)
+  let es' = updateEditorState es keystrokes
+      needsRedraw = case generation of Just oldGeneration -> oldGeneration /= (generationOf es')
+                                       Nothing -> True
+  --msp needsRedraw
+  () <- if needsRedraw then render es' else return ()
+  editorLoop es' (Just $ generationOf es') (w, h)
+
+editorLoopStart es = do
+  Just (h, w) <- getTerminalSize
+  editorLoop es Nothing (w, h)
+
+main = do
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout NoBuffering
+  setSGR [Reset]
+  es <- readFileInitState "sample.txt"
+  withRawInput 0 1 $ editorLoopStart es
+  putStrLn "done2"
+  msp "done"
 
 push :: Int -> State [Int] ()
 push x = state (\xs -> ((), x:xs))
@@ -109,4 +150,4 @@ blah = do
   a <- pop
   return a
 
-main = msp $ runState blah [2]
+_main = msp $ runState blah [2]
