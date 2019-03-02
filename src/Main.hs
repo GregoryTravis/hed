@@ -138,10 +138,7 @@ processCommand (Dir dx dy) = do
 processCommand (Huh _) = return ()
 
 processKeys :: [Char] -> State EditorState ()
-processKeys [] = return ()
-processKeys (key : keys) = do
-  processCommand $ let v = (keystrokeToCommand key) in v
-  processKeys keys
+processKeys keys = mapM_ (\key -> processCommand (keystrokeToCommand key)) keys
 
 blah es keys = case (runState (processKeys keys) es) of ((), es') -> es'
 
