@@ -49,7 +49,7 @@ withRawInput vmin vtime application = do
                  msp "ASDFASDF"
                  return ()
 
-data Document = Document (V.Vector Text) deriving Show
+data Document = Document (V.Vector Text) deriving (Eq, Show)
 
 readFileAsDoc :: String -> IO Document
 readFileAsDoc filename = do
@@ -59,16 +59,16 @@ readFileAsDoc filename = do
   return $ Document $ V.fromList $ T.splitOn "\n" (T.pack entireFile)
 
 -- Position of the cursor relative to the screen origin
-data CursorPos = CursorPos Int Int
+data CursorPos = CursorPos Int Int deriving (Eq, Show)
 -- Position of the text character at the screen origin
-data ViewPos = ViewPos Int Int
+data ViewPos = ViewPos Int Int deriving (Eq, Show)
 
-data ViewState = ViewState ViewPos CursorPos
+data ViewState = ViewState ViewPos CursorPos deriving (Eq, Show)
 
 type Generation = Int
 
 -- Int: generation
-data EditorState = EditorState Generation ViewState Document
+data EditorState = EditorState Generation ViewState Document deriving (Eq, Show)
 
 generationOf (EditorState generation _ _) = generation
 
@@ -117,7 +117,7 @@ render fb (EditorState _ (ViewState vp cp) doc) = do
   renderDocument fb vp doc
   hFlush stdout
 
-data Command = Dir Int Int | Huh String
+data Command = Dir Int Int | Huh String deriving (Eq, Show)
 
 keystrokeToCommand :: Char -> Command
 keystrokeToCommand 'h' = Dir (-1) 0
@@ -126,21 +126,31 @@ keystrokeToCommand 'j' = Dir 0 1
 keystrokeToCommand 'k' = Dir 0 (-1)
 keystrokeToCommand c = Huh [c]
 
-updateEditorState1 :: EditorState -> Command -> EditorState
-updateEditorState1 (EditorState generation (ViewState (ViewPos x y) cp) doc) (Dir dx dy) =
-  EditorState (generation + 1) (ViewState (ViewPos (x + dx) (y + dy)) cp) doc
-updateEditorState1 es (Huh _) = es
+getEditorState :: State EditorState EditorState
+getEditorState = state $ \es -> (es, es)
+setEditorState :: EditorState -> State EditorState ()
+setEditorState es' = state $ \es -> ((), es')
 
-updateEditorState :: EditorState -> String -> EditorState
-updateEditorState es [] = es
-updateEditorState es (c : cs) = updateEditorState (updateEditorState1 es (keystrokeToCommand c)) cs
+processCommand :: Command -> State EditorState ()
+processCommand (Dir dx dy) = do
+  es@(EditorState generation (ViewState (ViewPos x y) cp) doc) <- getEditorState
+  setEditorState $ EditorState (generation + 1) (ViewState (ViewPos (x + dx) (y + dy)) cp) doc
+processCommand (Huh _) = return ()
+
+processKeys :: [Char] -> State EditorState ()
+processKeys [] = return ()
+processKeys (key : keys) = do
+  processCommand $ let v = (keystrokeToCommand key) in v
+  processKeys keys
+
+blah es keys = case (runState (processKeys keys) es) of ((), es') -> es'
 
 editorLoop es fb generation = do
   --msp "loop"
   keystrokes <- readKeystrokes
   --let keystrokes = [] :: [Char]
   () <- if ((length keystrokes) == 0) then (return ()) else (debug fb keystrokes)
-  let es' = updateEditorState es keystrokes
+  let es' = blah es keystrokes
       needsRedraw = case generation of Just oldGeneration -> oldGeneration /= (generationOf es')
                                        Nothing -> True
   --msp needsRedraw
@@ -159,14 +169,3 @@ main = do
   withRawInput 0 1 $ editorLoopStart es
   putStrLn "done2"
   msp "done"
-
-push :: Int -> State [Int] ()
-push x = state (\xs -> ((), x:xs))
-pop :: State [Int] Int
-pop = state (\(x:xs) -> (x, xs))
-blah = do
-  push 3
-  a <- pop
-  return a
-
-_main = msp $ runState blah [2]
