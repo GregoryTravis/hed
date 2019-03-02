@@ -22,4 +22,5 @@ executable hed
                        ansi-terminal >= 0.9,
                        pretty-simple,
                        text,
-                       unix
+                       unix,
+                       vector

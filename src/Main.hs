@@ -1,22 +1,26 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Control.Concurrent (threadDelay)
 import Control.Exception (finally, catch, IOException)
 import qualified Data.Text as T
+import Data.Text (Text, pack, unpack)
+import qualified Data.Vector as V
 import System.Console.ANSI
-import System.IO
+import qualified System.IO as IO
 import System.Posix.IO (fdRead, stdInput)
 import System.Posix.Terminal
 
 
 import Util
 
-box w h c = replicate h (T.pack (replicate w c))
+box w h c = replicate h (pack (replicate w c))
 
 drawBox (startX, startY) box = do
   mapM_ drawRow (zip [0..] box)
   where drawRow (y, row) = do setCursorPosition (startY + y) startX
-                              putStr (T.unpack row)
+                              putStr (unpack row)
 
 fillScreen = do
   Just (h, w) <- getTerminalSize
@@ -49,8 +53,17 @@ withRawInput vmin vtime application = do
   application 
     `finally` setTerminalAttributes stdInput oldTermSettings Immediately
 
+data FileLines = FileLines (V.Vector Text) deriving Show
+
+readFileAsFL :: String -> IO FileLines
+readFileAsFL filename = do
+  entireFile <- IO.readFile filename
+  let foo :: [Text]
+      foo = T.splitOn "\n" (T.pack entireFile)
+  return $ FileLines $ V.fromList $ T.splitOn "\n" (T.pack entireFile)
+
 main = do
-  hSetBuffering stdout NoBuffering
+  IO.hSetBuffering IO.stdout IO.NoBuffering
   setSGR [SetColor Foreground Vivid Red]
   setSGR [SetColor Background Vivid Blue]
   clearScreen
@@ -63,9 +76,12 @@ main = do
   --fillScreen
   --drawBox (3, 3) (box 8 8 'r')
   setCursorPosition 0 0
-  speedTest
+  --speedTest
+  fl <- readFileAsFL "sample.txt"
+  msp "whey"
+  msp fl
   let loop = do
-        c <- hGetChar stdin
+        c <- IO.hGetChar IO.stdin
         setCursorPosition 0 0
         putStr [c]
         loop
