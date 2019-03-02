@@ -131,23 +131,30 @@ getEditorState = state $ \es -> (es, es)
 setEditorState :: EditorState -> State EditorState ()
 setEditorState es' = state $ \es -> ((), es')
 
-processCommand :: Command -> State EditorState ()
-processCommand (Dir dx dy) = do
+processCommand :: FrameBuffer -> Command -> State EditorState ()
+processCommand fb (Dir dx dy) = do
   es@(EditorState generation (ViewState (ViewPos x y) cp) doc) <- getEditorState
-  setEditorState $ EditorState (generation + 1) (ViewState (ViewPos (x + dx) (y + dy)) cp) doc
-processCommand (Huh _) = return ()
+  let newViewPos = clipToFB fb $ ViewPos (x + dx) (y + dy)
+  setEditorState $ EditorState (generation + 1) (ViewState newViewPos cp) doc
+processCommand fb (Huh _) = return ()
 
-processKeys :: [Char] -> State EditorState ()
-processKeys keys = mapM_ (\key -> processCommand (keystrokeToCommand key)) keys
+clipToFB (FrameBuffer (w, h)) (ViewPos x y) = ViewPos (clip x 0 w) (clip y 0 h)
+clip x lo hi
+  | x < lo = lo
+  | x >= hi-1 = hi-1
+  | otherwise = x
 
-processKeysReturnState es keys = case (runState (processKeys keys) es) of ((), es') -> es'
+processKeys :: FrameBuffer -> [Char] -> State EditorState ()
+processKeys fb keys = mapM_ (\key -> processCommand fb (keystrokeToCommand key)) keys
+
+processKeysReturnState es fb keys = case (runState (processKeys fb keys) es) of ((), es') -> es'
 
 editorLoop es fb generation = do
   --msp "loop"
   keystrokes <- readKeystrokes
   --let keystrokes = [] :: [Char]
   () <- if ((length keystrokes) == 0) then (return ()) else (debug fb keystrokes)
-  let es' = processKeysReturnState es keystrokes
+  let es' = processKeysReturnState es fb keystrokes
       needsRedraw = case generation of Just oldGeneration -> oldGeneration /= (generationOf es')
                                        Nothing -> True
   --msp needsRedraw
