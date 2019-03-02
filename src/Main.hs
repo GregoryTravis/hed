@@ -1,8 +1,12 @@
 module Main where
 
 import Control.Concurrent (threadDelay)
+import Control.Exception (finally, catch, IOException)
 import System.Console.ANSI
 import System.IO
+import System.Posix.IO (fdRead, stdInput)
+import System.Posix.Terminal
+
 
 import Util
 
@@ -21,7 +25,32 @@ fillScreen = do
   drawBox (0, 0) (box (w-0) (h-1) 'x')
   drawBox (0, (h-1)) (box (w-0) 1 'y')
 
--- Set colors and write some text in those colors.
+speedTest = time "speedTest" $ mapM_ (\_ -> fillScreen) [0..9]
+
+-- Taken from https://stackoverflow.com/questions/23068218/haskell-read-raw-keyboard-input/36297897#36297897
+withRawInput :: Int -> Int -> IO a -> IO a
+withRawInput vmin vtime application = do
+
+  {- retrieve current settings -}
+  oldTermSettings <- getTerminalAttributes stdInput
+
+  {- modify settings -}
+  let newTermSettings = 
+        flip withoutMode  EnableEcho   . -- don't echo keystrokes
+        flip withoutMode  ProcessInput . -- turn on non-canonical mode
+        flip withTime     vtime        . -- wait at most vtime decisecs per read
+        flip withMinInput vmin         $ -- wait for >= vmin bytes per read
+        oldTermSettings
+
+  {- install new settings -}
+  setTerminalAttributes stdInput newTermSettings Immediately
+
+  {- restore old settings no matter what; this prevents the terminal
+   - from becoming borked if the application halts with an exception
+   -}
+  application 
+    `finally` setTerminalAttributes stdInput oldTermSettings Immediately
+
 main = do
   hSetBuffering stdout NoBuffering
   setSGR [SetColor Foreground Vivid Red]
@@ -33,13 +62,12 @@ main = do
   putStrLn "Default colors."
   Just (h, w) <- getTerminalSize
   putStrLn (show (w, h))
-  --drawBox (0, 0) (box w h 'x')
-  let blast = mapM_ (\_ -> fillScreen) [0..9]
-   in time "blast" blast
-  --fillScreen
+  fillScreen
+  setCursorPosition 0 0
   let loop = do
         c <- hGetChar stdin
-        --putStrLn [c]
+        setCursorPosition 0 0
+        putStr [c]
         loop
-   in loop
+   in withRawInput 0 1 loop
   --threadDelay $ 2 * 1000000
