@@ -140,14 +140,14 @@ processCommand (Huh _) = return ()
 processKeys :: [Char] -> State EditorState ()
 processKeys keys = mapM_ (\key -> processCommand (keystrokeToCommand key)) keys
 
-blah es keys = case (runState (processKeys keys) es) of ((), es') -> es'
+processKeysReturnState es keys = case (runState (processKeys keys) es) of ((), es') -> es'
 
 editorLoop es fb generation = do
   --msp "loop"
   keystrokes <- readKeystrokes
   --let keystrokes = [] :: [Char]
   () <- if ((length keystrokes) == 0) then (return ()) else (debug fb keystrokes)
-  let es' = blah es keystrokes
+  let es' = processKeysReturnState es keystrokes
       needsRedraw = case generation of Just oldGeneration -> oldGeneration /= (generationOf es')
                                        Nothing -> True
   --msp needsRedraw
