@@ -53,7 +53,6 @@ withRawInput vmin vtime application = do
    -}
   application 
     `finally` do setTerminalAttributes stdInput oldTermSettings Immediately
-                 writeFile "asdf" "koo"
                  msp "ASDFASDF"
                  return ()
 
