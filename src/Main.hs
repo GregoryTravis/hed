@@ -8,11 +8,11 @@ import Data.Char (ord)
 import qualified Data.Text as T
 import Data.Text (Text, pack, unpack)
 import qualified Data.Vector as V
+import Control.Monad.State
 import System.Console.ANSI
 import qualified System.IO as IO
 import System.Posix.IO (fdRead, stdInput)
 import System.Posix.Terminal
-
 
 import Util
 
@@ -68,7 +68,7 @@ readFileAsFL filename = do
       foo = T.splitOn "\n" (T.pack entireFile)
   return $ FileLines $ V.fromList $ T.splitOn "\n" (T.pack entireFile)
 
-main = do
+screen = do
   IO.hSetBuffering IO.stdout IO.NoBuffering
   setSGR [SetColor Foreground Vivid Red]
   setSGR [SetColor Background Vivid Blue]
@@ -99,3 +99,14 @@ main = do
         loop topLine'
    in withRawInput 0 1 $ loop 0
   --threadDelay $ 2 * 1000000
+
+push :: Int -> State [Int] ()
+push x = state (\xs -> ((), x:xs))
+pop :: State [Int] Int
+pop = state (\(x:xs) -> (x, xs))
+blah = do
+  push 3
+  a <- pop
+  return a
+
+main = msp $ runState blah [2]
