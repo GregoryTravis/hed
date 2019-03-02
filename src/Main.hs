@@ -108,11 +108,14 @@ framebufferDrawHstrip (FrameBuffer (w, h)) (Hstrip text (start, length) (x, y))
 
 renderDocument fb@(FrameBuffer (w, h)) (ViewPos vx vy) (Document lines) = do
   mapM_ drawRow (zip [0..] (take h (drop vy (V.toList lines))))
-  where drawRow (y, text) = framebufferDrawHstrip fb (Hstrip text (vx, w) (0, y))
+  where drawRow (y, text) = do framebufferDrawHstrip fb (Hstrip text (vx, w) (0, y))
+                               framebufferDrawHstrip fb (Hstrip blankLine (0, w-(T.length text)) (T.length text, y))
+        blankLine = T.pack (replicate w ' ')
 
 render fb (EditorState _ (ViewState vp cp) doc) = do
-  clearScreen
+  --clearScreen
   renderDocument fb vp doc
+  hFlush stdout
 
 data Command = Dir Int Int | Huh String
 
@@ -150,7 +153,7 @@ editorLoopStart es = do
 
 main = do
   hSetBuffering stdin NoBuffering
-  hSetBuffering stdout NoBuffering
+  --hSetBuffering stdout NoBuffering
   setSGR [Reset]
   es <- readFileInitState "sample.txt"
   withRawInput 0 1 $ editorLoopStart es
