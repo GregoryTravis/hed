@@ -4,6 +4,7 @@ module Main where
 
 import Control.Concurrent (threadDelay)
 import Control.Exception (finally, catch, IOException)
+import Data.Char (ord)
 import qualified Data.Text as T
 import Data.Text (Text, pack, unpack)
 import qualified Data.Vector as V
@@ -55,6 +56,11 @@ withRawInput vmin vtime application = do
 
 data FileLines = FileLines (V.Vector Text) deriving Show
 
+drawFileLines topLine (FileLines lines) = do
+  mapM_ drawRow (zip [0..] (drop topLine (V.toList lines)))
+  where drawRow (y, row) = do setCursorPosition y 0
+                              putStr (unpack row)
+
 readFileAsFL :: String -> IO FileLines
 readFileAsFL filename = do
   entireFile <- IO.readFile filename
@@ -80,10 +86,16 @@ main = do
   fl <- readFileAsFL "sample.txt"
   msp "whey"
   msp fl
-  let loop = do
+  let loop topLine = do
         c <- IO.hGetChar IO.stdin
+        clearScreen
         setCursorPosition 0 0
-        putStr [c]
-        loop
-   in withRawInput 0 1 loop
+        drawFileLines topLine fl
+        let topLine' = case (ord c) of 107 -> topLine + 1
+                                       106 -> topLine - 1
+                                       _ -> topLine
+        putStrLn (show (ord c))
+        putStrLn (show topLine)
+        loop topLine'
+   in withRawInput 0 1 $ loop 0
   --threadDelay $ 2 * 1000000
