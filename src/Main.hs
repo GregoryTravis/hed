@@ -108,13 +108,29 @@ framebufferDrawHstrip (FrameBuffer (w, h)) (Hstrip text (start, length) (x, y))
 
 renderDocument fb@(FrameBuffer (w, h)) (ViewPos vx vy) (Document lines) = do
   mapM_ drawRow (zip [0..] (take h (drop vy (V.toList lines))))
-  where drawRow (y, text) = framebufferDrawHstrip fb (Hstrip text (vx, vx + w) (0, y))
+  where drawRow (y, text) = framebufferDrawHstrip fb (Hstrip text (vx, w) (0, y))
 
 render fb (EditorState _ (ViewState vp cp) doc) = do
   clearScreen
   renderDocument fb vp doc
 
-updateEditorState es keystrokes = es
+data Command = Dir Int Int | Huh String
+
+keystrokeToCommand :: Char -> Command
+keystrokeToCommand 'h' = Dir (-1) 0
+keystrokeToCommand 'l' = Dir 1 0
+keystrokeToCommand 'j' = Dir 0 1
+keystrokeToCommand 'k' = Dir 0 (-1)
+keystrokeToCommand c = Huh [c]
+
+updateEditorState1 :: EditorState -> Command -> EditorState
+updateEditorState1 (EditorState generation (ViewState (ViewPos x y) cp) doc) (Dir dx dy) =
+  EditorState (generation + 1) (ViewState (ViewPos (x + dx) (y + dy)) cp) doc
+updateEditorState1 es (Huh _) = es
+
+updateEditorState :: EditorState -> String -> EditorState
+updateEditorState es [] = es
+updateEditorState es (c : cs) = updateEditorState (updateEditorState1 es (keystrokeToCommand c)) cs
 
 editorLoop es fb generation = do
   --msp "loop"
