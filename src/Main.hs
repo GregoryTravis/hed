@@ -23,13 +23,6 @@ drawBox (startX, startY) box = do
   where drawRow (y, row) = do setCursorPosition (startY + y) startX
                               putStr (unpack row)
 
-fillScreen = do
-  Just (h, w) <- getTerminalSize
-  drawBox (0, 0) (box (w-0) (h-1) 'x')
-  drawBox (0, (h-1)) (box (w-0) 1 'y')
-
-speedTest = time "speedTest" $ mapM_ (\_ -> fillScreen) [0..99]
-
 -- Taken from https://stackoverflow.com/questions/23068218/haskell-read-raw-keyboard-input/36297897#36297897
 withRawInput :: Int -> Int -> IO a -> IO a
 withRawInput vmin vtime application = do
@@ -93,43 +86,51 @@ readKeystrokes = do
                    return (c:rest)
           else return []
 
-debug s = do
+debug fb@(FrameBuffer (w, h)) s = do
+  framebufferDrawHstrip fb (Hstrip (T.pack s) (0, w) (0, h-1))
+
+-- Hstrip text (start, lenth) (x, y)
+data Hstrip = Hstrip Text (Int, Int) (Int, Int)
+
+-- FrameBuffer (w, h)
+data FrameBuffer = FrameBuffer (Int, Int)
+
+getFrameBuffer = do
   Just (h, w) <- getTerminalSize
-  setCursorPosition (h-1) 0
-  putStr s
+  return $ FrameBuffer (w, h)
 
-renderDocument (ViewPos vx vy) (Document lines) = do
-  mapM_ drawRow (zip [0..] (drop vy (V.toList lines)))
-  where drawRow (y, row) = do setCursorPosition y 0
-                              putStr (drop vx (unpack row))
+framebufferDrawHstrip :: FrameBuffer -> Hstrip -> IO ()
+framebufferDrawHstrip (FrameBuffer (w, h)) (Hstrip text (start, length) (x, y))
+  | y < 0 || y >= h = error (show ("oob", w, h, start, length, x, y))
+  | x < 0 || x + length > w = error (show ("oob", w, h, start, length, x, y))
+  | otherwise = do setCursorPosition y x
+                   putStr (take length (drop start (T.unpack text)))
 
-render (EditorState _ (ViewState vp cp) doc) = do
+renderDocument fb@(FrameBuffer (w, h)) (ViewPos vx vy) (Document lines) = do
+  mapM_ drawRow (zip [0..] (take h (drop vy (V.toList lines))))
+  where drawRow (y, text) = framebufferDrawHstrip fb (Hstrip text (vx, vx + w) (0, y))
+
+render fb (EditorState _ (ViewState vp cp) doc) = do
   clearScreen
-  renderDocument vp doc
-
-updateTerminalSize (w, h) = do
-  ts <- getTerminalSize
-  return $ case ts of Just (h, w) -> (w, h)
-                      Nothing -> (w, h)
+  renderDocument fb vp doc
 
 updateEditorState es keystrokes = es
 
-editorLoop es generation (w, h) = do
+editorLoop es fb generation = do
   --msp "loop"
-  --(w, h) <- updateTerminalSize (w, h)
   keystrokes <- readKeystrokes
   --let keystrokes = [] :: [Char]
-  () <- if ((length keystrokes) == 0) then (return ()) else (debug keystrokes)
+  () <- if ((length keystrokes) == 0) then (return ()) else (debug fb keystrokes)
   let es' = updateEditorState es keystrokes
       needsRedraw = case generation of Just oldGeneration -> oldGeneration /= (generationOf es')
                                        Nothing -> True
   --msp needsRedraw
-  () <- if needsRedraw then render es' else return ()
-  editorLoop es' (Just $ generationOf es') (w, h)
+  () <- if needsRedraw then render fb es' else return ()
+  editorLoop es' fb (Just $ generationOf es')
 
 editorLoopStart es = do
-  Just (h, w) <- getTerminalSize
-  editorLoop es Nothing (w, h)
+  fb <- getFrameBuffer
+  editorLoop es fb Nothing
 
 main = do
   hSetBuffering stdin NoBuffering
