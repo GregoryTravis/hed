@@ -4,9 +4,15 @@ module Main where
 
 import Control.Concurrent (threadDelay)
 import Control.Exception (finally, catch, IOException)
-import Data.Char (ord)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Builder as B
+import qualified Data.ByteString.Char8 as C8
+import Data.Char (chr, ord)
+import Data.Monoid
 import qualified Data.Text as T
 import Data.Text (Text, pack, unpack)
+import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import Control.Monad.State
 import System.Console.ANSI
@@ -173,3 +179,45 @@ main = do
   withRawInput 0 1 $ editorLoopStart es
   putStrLn "done2"
   msp "done"
+
+fake :: Int -> String
+fake o = concat (map (\i -> (replicate 158 (chr (97 + (mod (o+i) 26))))) [0..42-1])
+fakes :: Vector String
+fakes = V.fromList $ map fake [0..25]
+fakesBs :: Vector ByteString
+fakesBs = V.fromList $ map C8.pack $ map fake [0..25]
+fakeLine i o = replicate 158 (chr (97 + (mod (o+i) 26)))
+fakeBsSep o = mconcat (map B.byteString (map C8.pack (map (\i -> (replicate 158 (chr (97 + (mod (o+i) 26))))) [0..42-1])))
+fakesBsSep :: Vector B.Builder
+fakesBsSep = V.fromList $ map fakeBsSep [0..25]
+
+speedTest label anim = do
+  clearScreen
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout (BlockBuffering Nothing)
+  time ("\n" ++ label ++ "\n")$ mapM_ foo [0..9999]
+  --threadDelay $ 5 * 1000000
+  where foo i = do --clearScreen
+                   setCursorPosition 0 0
+                   --B.hPutBuilder stdout $ B.byteString (fakesBs ! (mod i 26))
+                   anim i
+                   --msp i
+                   hFlush stdout
+
+speedTests = do
+  speedTest "hPutBuilder BS" $ \i -> B.hPutBuilder stdout $ fakesBsSep ! (mod i 26)
+  speedTest "hPutBuilder BSs" $ \i -> B.hPutBuilder stdout $ B.byteString (fakesBs ! (mod i 26))
+  speedTest "putStr Text" $ \i -> putStr (fakes ! (mod i 26))
+
+--main = speedTests
+
+__main = do
+  clearScreen
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout (BlockBuffering Nothing)
+  time "putStr Text" $ mapM_ foo [0..9999]
+  --threadDelay $ 5 * 1000000
+  where foo i = do --clearScreen
+                   setCursorPosition 0 0
+                   putStr (fakes ! (mod i 26))
+                   hFlush stdout
