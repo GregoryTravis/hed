@@ -6,8 +6,10 @@ import Control.Concurrent (threadDelay)
 import Control.Exception (finally, catch, IOException)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Builder as B
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as C8
+import Data.ByteString.Builder (Builder, byteString)
+import qualified Data.ByteString.Builder as B
 import Data.Char (chr, ord)
 import Data.Monoid
 import qualified Data.Text as T
@@ -55,14 +57,12 @@ withRawInput vmin vtime application = do
                  msp "ASDFASDF"
                  return ()
 
-data Document = Document (V.Vector Text) deriving (Eq, Show)
+data Document = Document (V.Vector ByteString) deriving (Eq, Show)
 
 readFileAsDoc :: String -> IO Document
 readFileAsDoc filename = do
   entireFile <- readFile filename
-  let foo :: [Text]
-      foo = T.splitOn "\n" (T.pack entireFile)
-  return $ Document $ V.fromList $ T.splitOn "\n" (T.pack entireFile)
+  return $ Document $ V.fromList $ BS.split (head (BS.unpack (C8.pack "\n"))) (C8.pack entireFile)
 
 -- Position of the cursor relative to the screen origin
 data CursorPos = CursorPos Int Int deriving (Eq, Show)
@@ -93,7 +93,8 @@ readKeystrokes = do
           else return []
 
 debug fb@(FrameBuffer (w, h)) s = do
-  framebufferDrawHstrip fb (Hstrip (T.pack s) (0, w) (0, h-1))
+  setCursorPosition (h-1) 0
+  putStr s
 
 -- Hstrip text (start, lenth) (x, y)
 data Hstrip = Hstrip Text (Int, Int) (Int, Int)
@@ -105,18 +106,31 @@ getFrameBuffer = do
   Just (h, w) <- getTerminalSize
   return $ FrameBuffer (w, h)
 
-framebufferDrawHstrip :: FrameBuffer -> Hstrip -> IO ()
-framebufferDrawHstrip (FrameBuffer (w, h)) (Hstrip text (start, length) (x, y))
-  | y < 0 || y >= h = error (show ("oob", w, h, start, length, x, y))
-  | x < 0 || x + length > w = error (show ("oob", w, h, start, length, x, y))
-  | otherwise = do setCursorPosition y x
-                   putStr (take length (drop start (T.unpack text)))
+-- Trim a line at an x offset to the screen width, and add enough spaces to equal the screen width
+renderDocumentLineAsBS :: FrameBuffer -> Int -> ByteString -> ByteString -> Builder
+renderDocumentLineAsBS (FrameBuffer (w, h)) vx lotsOfSpaces line =
+  let clippedLine = BS.take w $ BS.drop (fromIntegral vx) line
+      spacesNeeded = max 0 (w - (fromIntegral $ BS.length clippedLine))
+      spaces = if spacesNeeded == 0 then mempty else BS.take (fromIntegral spacesNeeded) lotsOfSpaces
+      combined = byteString clippedLine <> byteString spaces
+      ok = (BS.length clippedLine + BS.length spaces) == fromIntegral w
+      ok2 = (BS.length (BSL.toStrict (B.toLazyByteString combined))) == fromIntegral w
+   in assert (ok && ok2) combined
 
-renderDocument fb@(FrameBuffer (w, h)) (ViewPos vx vy) (Document lines) = do
-  mapM_ drawRow (zip [0..] (take h (drop vy (V.toList lines))))
-  where drawRow (y, text) = do framebufferDrawHstrip fb (Hstrip text (vx, w) (0, y))
-                               framebufferDrawHstrip fb (Hstrip blankLine (0, w-(T.length text)) (max 0 (T.length text - vx), y))
-        blankLine = T.pack (replicate w ' ')
+renderDocumentAsBS :: FrameBuffer -> Document -> ViewPos -> ByteString -> Builder
+renderDocumentAsBS fb@(FrameBuffer (w, h)) (Document lines) (ViewPos vx vy) lotsOfSpaces =
+  let linesOnScreen = take h (drop vy (V.toList lines))
+   in mconcat $ map (renderDocumentLineAsBS fb vx lotsOfSpaces) linesOnScreen
+
+renderDocument :: FrameBuffer -> ViewPos -> Document -> IO ()
+renderDocument fb vp doc = do
+  setCursorPosition 0 0
+  B.hPutBuilder stdout $ renderDocumentAsBS fb doc vp lotsOfSpaces
+  hFlush stdout
+  where lotsOfSpaces = blankLine fb
+
+blankLine :: FrameBuffer -> ByteString
+blankLine (FrameBuffer (w, h)) = C8.pack (replicate w ' ')
 
 render fb (EditorState _ (ViewState vp cp) doc) = do
   --clearScreen
@@ -187,7 +201,7 @@ fakes = V.fromList $ map fake [0..25]
 fakesBs :: Vector ByteString
 fakesBs = V.fromList $ map C8.pack $ map fake [0..25]
 fakeLine i o = replicate 158 (chr (97 + (mod (o+i) 26)))
-fakeBsSep o = mconcat (map B.byteString (map C8.pack (map (\i -> (replicate 158 (chr (97 + (mod (o+i) 26))))) [0..42-1])))
+fakeBsSep o = mconcat (map byteString (map C8.pack (map (\i -> (replicate 158 (chr (97 + (mod (o+i) 26))))) [0..42-1])))
 fakesBsSep :: Vector B.Builder
 fakesBsSep = V.fromList $ map fakeBsSep [0..25]
 
@@ -197,16 +211,13 @@ speedTest label anim = do
   hSetBuffering stdout (BlockBuffering Nothing)
   time ("\n" ++ label ++ "\n")$ mapM_ foo [0..9999]
   --threadDelay $ 5 * 1000000
-  where foo i = do --clearScreen
-                   setCursorPosition 0 0
-                   --B.hPutBuilder stdout $ B.byteString (fakesBs ! (mod i 26))
+  where foo i = do setCursorPosition 0 0
                    anim i
-                   --msp i
                    hFlush stdout
 
 speedTests = do
   speedTest "hPutBuilder BS" $ \i -> B.hPutBuilder stdout $ fakesBsSep ! (mod i 26)
-  speedTest "hPutBuilder BSs" $ \i -> B.hPutBuilder stdout $ B.byteString (fakesBs ! (mod i 26))
+  speedTest "hPutBuilder BSs" $ \i -> B.hPutBuilder stdout $ byteString (fakesBs ! (mod i 26))
   speedTest "putStr Text" $ \i -> putStr (fakes ! (mod i 26))
 
 --main = speedTests
