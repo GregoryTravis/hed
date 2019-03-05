@@ -101,16 +101,16 @@ render fb (EditorState { viewState = (ViewState vp _),
                          document = doc }) = do
   --clearScreen
   setCursorPosition 0 0
-  B.hPutBuilder stdout $ renderDocument fb vp doc
+  B.hPutBuilder stdout $ renderDocument fb doc vp
   hFlush stdout
 
 data Command = Dir Int Int | Huh String deriving (Eq, Show)
 
 keystrokeToCommand :: Char -> Command
-keystrokeToCommand 'h' = Dir (-10) 0
-keystrokeToCommand 'l' = Dir 10 0
-keystrokeToCommand 'j' = Dir 0 10
-keystrokeToCommand 'k' = Dir 0 (-10)
+keystrokeToCommand 'h' = Dir (-1) 0
+keystrokeToCommand 'l' = Dir 1 0
+keystrokeToCommand 'j' = Dir 0 1
+keystrokeToCommand 'k' = Dir 0 (-1)
 keystrokeToCommand c = Huh [c]
 
 getEditorState :: State EditorState EditorState

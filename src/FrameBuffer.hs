@@ -8,7 +8,7 @@ module FrameBuffer
 import System.Console.ANSI
 
 -- FrameBuffer (w, h)
-data FrameBuffer = FrameBuffer (Int, Int)
+data FrameBuffer = FrameBuffer (Int, Int) deriving Show
 
 -- Position of the text character at the screen origin
 data ViewPos = ViewPos Int Int deriving (Eq, Show)

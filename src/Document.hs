@@ -14,20 +14,34 @@ import Data.Text (Text, pack, unpack)
 import Data.Vector (Vector, (!))
 import Data.Word (Word8)
 import qualified Data.Vector as V
+import qualified Debug.Trace as TR
 
-import FrameBuffer
+import FrameBuffer hiding (debug)
 import Util
+
+debug = False
+--debug = True
 
 data Document = Document (V.Vector ByteString) deriving (Eq, Show)
 
 type DocChar = Word8
 
 charAt :: Document -> Int -> Int -> DocChar
-charAt (Document lines) x y = BS.index (lines ! y) x
+--charAt _ x y | TR.trace (show ("hey", x, y)) False = undefined
+charAt (Document lines) x y
+  | x < 0 = conv ' '
+  | y < 0 = conv ' '
+  | y >= (V.length lines) = conv ' '
+  | otherwise = ch x (lines ! y)
+  where ch x line | x > (BS.length line) = conv ' '
+                  | x == (BS.length line) = conv '\n'
+                  | otherwise = BS.index line x
+        conv c = BS.index (C8.pack [c]) 0
 
-slowRender :: FrameBuffer -> Document -> ViewPos -> Builder
-slowRender (FrameBuffer (w, h)) doc (ViewPos vx vy) =
-  toBuilder [charAt doc (x + vx) (y + vy) | x <- [0..w-1], y <- [0..h-1]]
+slowRenderDocument :: FrameBuffer -> Document -> ViewPos -> Builder
+--slowRenderDocument fb doc vp | TR.trace (show (fb, doc, vp)) False = undefined
+slowRenderDocument (FrameBuffer (w, h)) doc (ViewPos vx vy) =
+  toBuilder $ [charAt doc (x + vx) (y + vy) | y <- [0..h-1], x <- [0..w-1]]
   where toBuilder :: [DocChar] -> Builder
         toBuilder ws = byteString $ BS.pack ws
 
@@ -54,10 +68,11 @@ renderDocumentAsBS fb@(FrameBuffer (w, h)) (Document lines) (ViewPos vx vy) lots
    in (mconcat $ map (renderDocumentLineAsBS fb vx lotsOfSpaces) linesOnScreen) <>
      mconcat (map byteString (replicate additionalBlankLines lotsOfSpaces))
 
-renderDocument :: FrameBuffer -> ViewPos -> Document -> Builder
-renderDocument fb vp doc = renderDocumentAsBS fb doc vp lotsOfSpaces
+fastRenderDocument :: FrameBuffer -> Document -> ViewPos -> Builder
+fastRenderDocument fb doc vp = renderDocumentAsBS fb doc vp lotsOfSpaces
   where lotsOfSpaces = blankLine fb
 
 blankLine :: FrameBuffer -> ByteString
 blankLine (FrameBuffer (w, h)) = C8.pack (replicate w ' ')
 
+renderDocument = if debug then slowRenderDocument else fastRenderDocument
