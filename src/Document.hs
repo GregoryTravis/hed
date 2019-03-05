@@ -12,12 +12,24 @@ import Data.ByteString.Builder (Builder, byteString)
 import qualified Data.ByteString.Builder as B
 import Data.Text (Text, pack, unpack)
 import Data.Vector (Vector, (!))
+import Data.Word (Word8)
 import qualified Data.Vector as V
 
 import FrameBuffer
 import Util
 
 data Document = Document (V.Vector ByteString) deriving (Eq, Show)
+
+type DocChar = Word8
+
+charAt :: Document -> Int -> Int -> DocChar
+charAt (Document lines) x y = BS.index (lines ! y) x
+
+slowRender :: FrameBuffer -> Document -> ViewPos -> Builder
+slowRender (FrameBuffer (w, h)) doc (ViewPos vx vy) =
+  toBuilder [charAt doc (x + vx) (y + vy) | x <- [0..w-1], y <- [0..h-1]]
+  where toBuilder :: [DocChar] -> Builder
+        toBuilder ws = byteString $ BS.pack ws
 
 readFileAsDoc :: String -> IO Document
 readFileAsDoc filename = do
