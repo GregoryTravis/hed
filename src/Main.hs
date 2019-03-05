@@ -74,13 +74,22 @@ data ViewState = ViewState ViewPos CursorPos deriving (Eq, Show)
 type Generation = Int
 
 -- Int: generation
-data EditorState = EditorState Generation ViewState Document deriving (Eq, Show)
-
-generationOf (EditorState generation _ _) = generation
+data EditorState = EditorState {
+  generation :: Generation,
+  viewState :: ViewState,
+  document :: Document } deriving (Eq, Show)
+{-
+  let q = Foo { a = 3, b = "asf" }
+  msp q
+  msp (a q)
+  msp (b q)
+-}
 
 readFileInitState filename = do
   doc <- readFileAsDoc filename
-  return $ EditorState 0 (ViewState (ViewPos 0 0) (CursorPos 0 0)) doc
+  return $ EditorState { generation = 0,
+                         viewState = (ViewState (ViewPos 0 0) (CursorPos 0 0)),
+                         document = doc }
 
 readKeystrokes :: IO [Char]
 readKeystrokes = do
@@ -132,7 +141,8 @@ renderDocument fb vp doc = do
 blankLine :: FrameBuffer -> ByteString
 blankLine (FrameBuffer (w, h)) = C8.pack (replicate w ' ')
 
-render fb (EditorState _ (ViewState vp cp) doc) = do
+render fb (EditorState { viewState = (ViewState vp _),
+                         document = doc }) = do
   --clearScreen
   renderDocument fb vp doc
   hFlush stdout
@@ -153,9 +163,9 @@ setEditorState es' = state $ \es -> ((), es')
 
 processCommand :: FrameBuffer -> Command -> State EditorState ()
 processCommand fb (Dir dx dy) = do
-  es@(EditorState generation (ViewState (ViewPos x y) cp) doc) <- getEditorState
+  es@(EditorState { generation = generation, viewState = (ViewState (ViewPos x y) cp), document =  doc }) <- getEditorState
   let newViewPos = clipToFB fb $ ViewPos (x + dx) (y + dy)
-  setEditorState $ EditorState (generation + 1) (ViewState newViewPos cp) doc
+  setEditorState $ EditorState { generation = (generation + 1), viewState = (ViewState newViewPos cp), document = doc }
 processCommand fb (Huh _) = return ()
 
 clipToFB (FrameBuffer (w, h)) (ViewPos x y) = ViewPos (clip x 0 w) (clip y 0 h)
@@ -169,21 +179,24 @@ processKeys fb keys = mapM_ (\key -> processCommand fb (keystrokeToCommand key))
 
 processKeysReturnState es fb keys = case (runState (processKeys fb keys) es) of ((), es') -> es'
 
-editorLoop es fb generation = do
+editorLoop :: EditorState -> FrameBuffer -> Maybe Int -> IO ()
+editorLoop es fb gen = do
   --msp "loop"
   keystrokes <- readKeystrokes
   --let keystrokes = [] :: [Char]
   () <- if ((length keystrokes) == 0) then (return ()) else (debug fb keystrokes)
   let es' = processKeysReturnState es fb keystrokes
-      needsRedraw = case generation of Just oldGeneration -> oldGeneration /= (generationOf es')
-                                       Nothing -> True
+      needsRedraw = case gen of Just oldGen -> oldGen /= (generation es')
+                                Nothing -> True
   --msp needsRedraw
   () <- if needsRedraw then render fb es' else return ()
-  editorLoop es' fb (Just $ generationOf es')
+  editorLoop es' fb (Just $ generation es')
 
 editorLoopStart es = do
   fb <- getFrameBuffer
   editorLoop es fb Nothing
+
+data Foo = Foo { a :: Int, b :: String } deriving Show
 
 main = do
   hSetBuffering stdin NoBuffering
