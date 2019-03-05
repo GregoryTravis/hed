@@ -22,6 +22,8 @@ import System.IO
 import System.Posix.IO (fdRead, stdInput)
 import System.Posix.Terminal
 
+import Document
+import FrameBuffer
 import Util
 
 box w h c = replicate h (pack (replicate w c))
@@ -57,17 +59,8 @@ withRawInput vmin vtime application = do
                  msp "ASDFASDF"
                  return ()
 
-data Document = Document (V.Vector ByteString) deriving (Eq, Show)
-
-readFileAsDoc :: String -> IO Document
-readFileAsDoc filename = do
-  entireFile <- readFile filename
-  return $ Document $ V.fromList $ BS.split (head (BS.unpack (C8.pack "\n"))) (C8.pack entireFile)
-
 -- Position of the cursor relative to the screen origin
 data CursorPos = CursorPos Int Int deriving (Eq, Show)
--- Position of the text character at the screen origin
-data ViewPos = ViewPos Int Int deriving (Eq, Show)
 
 data ViewState = ViewState ViewPos CursorPos deriving (Eq, Show)
 
@@ -101,52 +94,14 @@ readKeystrokes = do
                    return (c:rest)
           else return []
 
-debug fb@(FrameBuffer (w, h)) s = do
-  setCursorPosition (h-1) 0
-  putStr s
-
 -- Hstrip text (start, lenth) (x, y)
 data Hstrip = Hstrip Text (Int, Int) (Int, Int)
-
--- FrameBuffer (w, h)
-data FrameBuffer = FrameBuffer (Int, Int)
-
-getFrameBuffer = do
-  Just (h, w) <- getTerminalSize
-  return $ FrameBuffer (w, h)
-
--- Trim a line at an x offset to the screen width, and add enough spaces to equal the screen width
-renderDocumentLineAsBS :: FrameBuffer -> Int -> ByteString -> ByteString -> Builder
-renderDocumentLineAsBS (FrameBuffer (w, h)) vx lotsOfSpaces line =
-  let clippedLine = BS.take w $ BS.drop (fromIntegral vx) line
-      spacesNeeded = max 0 (w - (fromIntegral $ BS.length clippedLine))
-      spaces = if spacesNeeded == 0 then mempty else BS.take (fromIntegral spacesNeeded) lotsOfSpaces
-      combined = byteString clippedLine <> byteString spaces
-      ok = (BS.length clippedLine + BS.length spaces) == fromIntegral w
-      ok2 = (BS.length (BSL.toStrict (B.toLazyByteString combined))) == fromIntegral w
-   in assert (ok && ok2) combined
-
-renderDocumentAsBS :: FrameBuffer -> Document -> ViewPos -> ByteString -> Builder
-renderDocumentAsBS fb@(FrameBuffer (w, h)) (Document lines) (ViewPos vx vy) lotsOfSpaces =
-  let linesOnScreen = take h (drop vy (V.toList lines))
-      additionalBlankLines = h - (length linesOnScreen)
-   in (mconcat $ map (renderDocumentLineAsBS fb vx lotsOfSpaces) linesOnScreen) <>
-     mconcat (map byteString (replicate additionalBlankLines lotsOfSpaces))
-
-renderDocument :: FrameBuffer -> ViewPos -> Document -> IO ()
-renderDocument fb vp doc = do
-  setCursorPosition 0 0
-  B.hPutBuilder stdout $ renderDocumentAsBS fb doc vp lotsOfSpaces
-  hFlush stdout
-  where lotsOfSpaces = blankLine fb
-
-blankLine :: FrameBuffer -> ByteString
-blankLine (FrameBuffer (w, h)) = C8.pack (replicate w ' ')
 
 render fb (EditorState { viewState = (ViewState vp _),
                          document = doc }) = do
   --clearScreen
-  renderDocument fb vp doc
+  setCursorPosition 0 0
+  B.hPutBuilder stdout $ renderDocument fb vp doc
   hFlush stdout
 
 data Command = Dir Int Int | Huh String deriving (Eq, Show)
@@ -165,7 +120,7 @@ setEditorState es' = state $ \es -> ((), es')
 
 processCommand :: FrameBuffer -> Command -> State EditorState ()
 processCommand fb (Dir dx dy) = do
-  es@(EditorState { generation = generation, viewState = (ViewState (ViewPos x y) cp), document =  doc }) <- getEditorState
+  es@(EditorState { generation = generation, viewState = (ViewState (ViewPos x y) cp), document = doc }) <- getEditorState
   let newViewPos = clipToFB fb $ ViewPos (x + dx) (y + dy)
   setEditorState $ EditorState { generation = (generation + 1), viewState = (ViewState newViewPos cp), document = doc }
 processCommand fb (Huh _) = return ()
