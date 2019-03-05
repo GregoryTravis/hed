@@ -129,7 +129,9 @@ renderDocumentLineAsBS (FrameBuffer (w, h)) vx lotsOfSpaces line =
 renderDocumentAsBS :: FrameBuffer -> Document -> ViewPos -> ByteString -> Builder
 renderDocumentAsBS fb@(FrameBuffer (w, h)) (Document lines) (ViewPos vx vy) lotsOfSpaces =
   let linesOnScreen = take h (drop vy (V.toList lines))
-   in mconcat $ map (renderDocumentLineAsBS fb vx lotsOfSpaces) linesOnScreen
+      additionalBlankLines = h - (length linesOnScreen)
+   in (mconcat $ map (renderDocumentLineAsBS fb vx lotsOfSpaces) linesOnScreen) <>
+     mconcat (map byteString (replicate additionalBlankLines lotsOfSpaces))
 
 renderDocument :: FrameBuffer -> ViewPos -> Document -> IO ()
 renderDocument fb vp doc = do
@@ -150,10 +152,10 @@ render fb (EditorState { viewState = (ViewState vp _),
 data Command = Dir Int Int | Huh String deriving (Eq, Show)
 
 keystrokeToCommand :: Char -> Command
-keystrokeToCommand 'h' = Dir (-1) 0
-keystrokeToCommand 'l' = Dir 1 0
-keystrokeToCommand 'j' = Dir 0 1
-keystrokeToCommand 'k' = Dir 0 (-1)
+keystrokeToCommand 'h' = Dir (-10) 0
+keystrokeToCommand 'l' = Dir 10 0
+keystrokeToCommand 'j' = Dir 0 10
+keystrokeToCommand 'k' = Dir 0 (-10)
 keystrokeToCommand c = Huh [c]
 
 getEditorState :: State EditorState EditorState
