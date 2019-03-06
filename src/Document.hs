@@ -19,8 +19,8 @@ import qualified Debug.Trace as TR
 import FrameBuffer hiding (debug)
 import Util
 
-debug = False
---debug = True
+--debug = False
+debug = True
 
 data Document = Document (V.Vector ByteString) deriving (Eq, Show)
 
@@ -35,7 +35,7 @@ charAt (Document lines) x y
   | otherwise = ch x (lines ! y)
   where ch x line | x >= (BS.length line) = conv ' '
                   -- | x == (BS.length line) = conv ' '
-                  | otherwise =  BS.index line x
+                  | otherwise = BS.index line x
         conv c = BS.index (C8.pack [c]) 0
 
 slowRenderDocument :: FrameBuffer -> Document -> ViewPos -> Builder
@@ -75,4 +75,13 @@ fastRenderDocument fb doc vp = renderDocumentAsBS fb doc vp lotsOfSpaces
 blankLine :: FrameBuffer -> ByteString
 blankLine (FrameBuffer (w, h)) = C8.pack (replicate w ' ')
 
-renderDocument = if debug then slowRenderDocument else fastRenderDocument
+bothRenderDocument :: FrameBuffer -> Document -> ViewPos -> Builder
+bothRenderDocument fb doc vp =
+  let fast = fastRenderDocument fb doc vp
+      slow = slowRenderDocument fb doc vp
+      fastBs = (BSL.toStrict (B.toLazyByteString fast))
+      slowBs = (BSL.toStrict (B.toLazyByteString slow))
+   in assert (fastBs == slowBs) $
+        byteString fastBs
+
+renderDocument = if debug then bothRenderDocument else fastRenderDocument
