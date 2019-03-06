@@ -119,6 +119,13 @@ getEditorState = state $ \es -> (es, es)
 setEditorState :: EditorState -> State EditorState ()
 setEditorState es' = state $ \es -> ((), es')
 
+viewPosFollowCursor fb@(FrameBuffer (w, h)) cp@(CursorPos cx cy) vp@(ViewPos vx vy) = ViewPos nvx nvy
+  where nvx = clip vx (cx - w + 0) (cx + 1)
+        nvy = clip vy (cy - h + 0) (cy + 1)
+-- ??if cx == vx + w then vx++; so cx-w is too low for vx
+  --max vx is cx
+  --min vx ix cx - w + 1
+
 moveAndClipCursor doc (CursorPos cx cy) (Dir dx dy) =
   let (newx, newy) = clipCursorToDocument doc (cx + dx, cy + dy)
    in CursorPos newx newy
@@ -127,7 +134,8 @@ processCommand :: FrameBuffer -> Command -> State EditorState ()
 processCommand fb d@(Dir dx dy) = do
   es@(EditorState { generation = generation, viewState = (ViewState vp cp), document = doc }) <- getEditorState
   let newCp = moveAndClipCursor doc cp d
-  setEditorState $ EditorState { generation = (generation + 1), viewState = (ViewState vp newCp), document = doc }
+  let newVp = viewPosFollowCursor fb newCp vp
+  setEditorState $ EditorState { generation = (generation + 1), viewState = (ViewState newVp newCp), document = doc }
 processCommand fb (Huh _) = return ()
 
 clipToFB (FrameBuffer (w, h)) (ViewPos x y) = ViewPos (clip x 0 w) (clip y 0 h)
