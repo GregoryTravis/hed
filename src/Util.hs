@@ -5,6 +5,8 @@ module Util
 , esp
 , eesp
 , fesp
+, lesp
+, leesp
 , eeesp
 , feesp
 , sp
@@ -21,6 +23,7 @@ import Data.Either
 import Data.Text (unpack)
 import Data.Text.Lazy (toStrict)
 import System.CPUTime
+import System.IO (appendFile)
 import System.IO.Unsafe
 import Text.Pretty.Simple (pShow, pShowNoColor)
 import Text.Printf
@@ -35,6 +38,12 @@ eesp s a = unsafePerformIO $ do
 
 fesp f a = unsafePerformIO $ do
   putStrLn $ show $ f a
+  return a
+
+lesp logFile a = leesp logFile (show a) a
+
+leesp logFile s a = unsafePerformIO $ do
+  appendFile logFile (show s ++ "\n")
   return a
 
 eeesp s a = unsafePerformIO $ do

@@ -33,9 +33,9 @@ charAt (Document lines) x y
   | y < 0 = conv ' '
   | y >= (V.length lines) = conv ' '
   | otherwise = ch x (lines ! y)
-  where ch x line | x > (BS.length line) = conv ' '
-                  | x == (BS.length line) = conv '\n'
-                  | otherwise = BS.index line x
+  where ch x line | x >= (BS.length line) = conv ' '
+                  -- | x == (BS.length line) = conv ' '
+                  | otherwise =  BS.index line x
         conv c = BS.index (C8.pack [c]) 0
 
 slowRenderDocument :: FrameBuffer -> Document -> ViewPos -> Builder
