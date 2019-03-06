@@ -1,5 +1,6 @@
 module Document
 ( Document(..)
+, clipCursorToDocument
 , readFileAsDoc
 , renderDocument
 ) where
@@ -24,6 +25,10 @@ debug = True
 
 data Document = Document (V.Vector ByteString) deriving (Eq, Show)
 
+numLines (Document lines) = V.length lines
+-- Does not do bounds-checking
+lineLength (Document lines) lineNo = BS.length (lines ! lineNo)
+
 type DocChar = Word8
 
 charAt :: Document -> Int -> Int -> DocChar
@@ -44,6 +49,18 @@ slowRenderDocument (FrameBuffer (w, h)) doc (ViewPos vx vy) =
   toBuilder $ [charAt doc (x + vx) (y + vy) | y <- [0..h-1], x <- [0..w-1]]
   where toBuilder :: [DocChar] -> Builder
         toBuilder ws = byteString $ BS.pack ws
+
+-- Move cursor to be within the boundaries of the document.
+-- Vertically, this means between the first and last lines (incl.)
+-- Horizontally, it means between the first and last chars (incl.) or after the last
+clipCursorToDocument :: Document -> (Int, Int) -> (Int, Int)
+clipCursorToDocument doc (x, y)
+  | y < 0 = clipCursorToDocument doc (x, 0)
+  | y >= numLines doc = clipCursorToDocument doc (x, numLines doc - 1)
+  | x < 0 = clipCursorToDocument doc (0, y)
+  | x > ll = clipCursorToDocument doc (x, ll)
+  | otherwise = (x, y)
+  where ll = lineLength doc y
 
 readFileAsDoc :: String -> IO Document
 readFileAsDoc filename = do

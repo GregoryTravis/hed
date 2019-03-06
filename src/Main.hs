@@ -97,11 +97,12 @@ readKeystrokes = do
 -- Hstrip text (start, lenth) (x, y)
 data Hstrip = Hstrip Text (Int, Int) (Int, Int)
 
-render fb (EditorState { viewState = (ViewState vp _),
+render fb (EditorState { viewState = (ViewState vp (CursorPos cx cy)),
                          document = doc }) = do
   --clearScreen
   setCursorPosition 0 0
   B.hPutBuilder stdout $ renderDocument fb doc vp
+  setCursorPosition cy cx
   hFlush stdout
 
 data Command = Dir Int Int | Huh String deriving (Eq, Show)
@@ -118,11 +119,15 @@ getEditorState = state $ \es -> (es, es)
 setEditorState :: EditorState -> State EditorState ()
 setEditorState es' = state $ \es -> ((), es')
 
+moveAndClipCursor doc (CursorPos cx cy) (Dir dx dy) =
+  let (newx, newy) = clipCursorToDocument doc (cx + dx, cy + dy)
+   in CursorPos newx newy
+
 processCommand :: FrameBuffer -> Command -> State EditorState ()
-processCommand fb (Dir dx dy) = do
-  es@(EditorState { generation = generation, viewState = (ViewState (ViewPos x y) cp), document = doc }) <- getEditorState
-  let newViewPos = clipToFB fb $ ViewPos (x + dx) (y + dy)
-  setEditorState $ EditorState { generation = (generation + 1), viewState = (ViewState newViewPos cp), document = doc }
+processCommand fb d@(Dir dx dy) = do
+  es@(EditorState { generation = generation, viewState = (ViewState vp cp), document = doc }) <- getEditorState
+  let newCp = moveAndClipCursor doc cp d
+  setEditorState $ EditorState { generation = (generation + 1), viewState = (ViewState vp newCp), document = doc }
 processCommand fb (Huh _) = return ()
 
 clipToFB (FrameBuffer (w, h)) (ViewPos x y) = ViewPos (clip x 0 w) (clip y 0 h)
