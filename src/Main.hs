@@ -97,12 +97,12 @@ readKeystrokes = do
 -- Hstrip text (start, lenth) (x, y)
 data Hstrip = Hstrip Text (Int, Int) (Int, Int)
 
-render fb (EditorState { viewState = (ViewState vp (CursorPos cx cy)),
+render fb (EditorState { viewState = (ViewState vp@(ViewPos vx vy) (CursorPos cx cy)),
                          document = doc }) = do
   --clearScreen
   setCursorPosition 0 0
   B.hPutBuilder stdout $ renderDocument fb doc vp
-  setCursorPosition cy cx
+  setCursorPosition (cy - vy) (cx - vx)
   hFlush stdout
 
 data Command = Dir Int Int | Huh String deriving (Eq, Show)
@@ -120,11 +120,8 @@ setEditorState :: EditorState -> State EditorState ()
 setEditorState es' = state $ \es -> ((), es')
 
 viewPosFollowCursor fb@(FrameBuffer (w, h)) cp@(CursorPos cx cy) vp@(ViewPos vx vy) = ViewPos nvx nvy
-  where nvx = clip vx (cx - w + 0) (cx + 1)
-        nvy = clip vy (cy - h + 0) (cy + 1)
--- ??if cx == vx + w then vx++; so cx-w is too low for vx
-  --max vx is cx
-  --min vx ix cx - w + 1
+  where nvx = clip vx (cx - w + 1) (cx + 1)
+        nvy = clip vy (cy - h + 1) (cy + 1)
 
 moveAndClipCursor doc (CursorPos cx cy) (Dir dx dy) =
   let (newx, newy) = clipCursorToDocument doc (cx + dx, cy + dy)

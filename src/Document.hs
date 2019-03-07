@@ -54,11 +54,12 @@ slowRenderDocument (FrameBuffer (w, h)) doc (ViewPos vx vy) =
 -- Vertically, this means between the first and last lines (incl.)
 -- Horizontally, it means between the first and last chars (incl.) or after the last
 clipCursorToDocument :: Document -> (Int, Int) -> (Int, Int)
+--clipCursorToDocument _ (x, y) | TR.trace (lesp "higgs" (show ("ah", x, y))) False = undefined
 clipCursorToDocument doc (x, y)
   | y < 0 = clipCursorToDocument doc (x, 0)
   | y >= numLines doc = clipCursorToDocument doc (x, numLines doc - 1)
   | x < 0 = clipCursorToDocument doc (0, y)
-  | x > ll = clipCursorToDocument doc (x, ll)
+  | x > ll = clipCursorToDocument doc (ll, y)
   | otherwise = (x, y)
   where ll = lineLength doc y
 
