@@ -71,12 +71,6 @@ data EditorState = EditorState {
   generation :: Generation,
   viewState :: ViewState,
   document :: Document } deriving (Eq, Show)
-{-
-  let q = Foo { a = 3, b = "asf" }
-  msp q
-  msp (a q)
-  msp (b q)
--}
 
 readFileInitState filename = do
   doc <- readFileAsDoc filename
@@ -134,11 +128,11 @@ processCommand fb d@(Dir dx dy) = do
   es@(EditorState { generation = generation, viewState = (ViewState vp cp), document = doc }) <- getEditorState
   let newCp = moveAndClipCursor doc cp d
   let newVp = viewPosFollowCursor fb newCp vp
-  setEditorState $ EditorState { generation = (generation + 1), viewState = (ViewState newVp newCp), document = doc }
+  setEditorState $ es { generation = (generation + 1), viewState = (ViewState newVp newCp) }
 processCommand fb (Insert c) = do
   es@(EditorState { generation = generation, viewState = vs@(ViewState vp (CursorPos cx cy)), document = doc }) <- getEditorState
   let newDoc = insertCharInDoc doc cx cy c
-  setEditorState $ EditorState { generation = (generation + 1), viewState = vs, document = newDoc }
+  setEditorState $ es { generation = (generation + 1), document = newDoc }
 processCommand fb (Huh _) = return ()
 
 clipToFB (FrameBuffer (w, h)) (ViewPos x y) = ViewPos (clip x 0 w) (clip y 0 h)
