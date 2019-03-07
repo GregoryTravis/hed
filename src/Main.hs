@@ -64,18 +64,13 @@ data CursorPos = CursorPos Int Int deriving (Eq, Show)
 
 data ViewState = ViewState ViewPos CursorPos deriving (Eq, Show)
 
-type Generation = Int
-
--- Int: generation
 data EditorState = EditorState {
-  generation :: Generation,
   viewState :: ViewState,
   document :: Document } deriving (Eq, Show)
 
 readFileInitState filename = do
   doc <- readFileAsDoc filename
-  return $ EditorState { generation = 0,
-                         viewState = (ViewState (ViewPos 0 0) (CursorPos 0 0)),
+  return $ EditorState { viewState = (ViewState (ViewPos 0 0) (CursorPos 0 0)),
                          document = doc }
 
 readKeystrokes :: IO [Char]
@@ -132,14 +127,14 @@ moveAndClipCursor doc (CursorPos cx cy) (Dir dx dy) =
 
 processCommand :: FrameBuffer -> Command -> State EditorState ()
 processCommand fb d@(Dir dx dy) = do
-  es@(EditorState { generation = generation, viewState = (ViewState vp cp), document = doc }) <- getEditorState
+  es@(EditorState { viewState = (ViewState vp cp), document = doc }) <- getEditorState
   let newCp = moveAndClipCursor doc cp d
   let newVp = viewPosFollowCursor fb newCp vp
-  setEditorState $ es { generation = (generation + 1), viewState = (ViewState newVp newCp) }
+  setEditorState $ es { viewState = (ViewState newVp newCp) }
 processCommand fb (Insert c) = do
-  es@(EditorState { generation = generation, viewState = vs@(ViewState vp (CursorPos cx cy)), document = doc }) <- getEditorState
+  es@(EditorState { viewState = vs@(ViewState vp (CursorPos cx cy)), document = doc }) <- getEditorState
   let newDoc = insertCharInDoc doc cx cy c
-  setEditorState $ es { generation = (generation + 1), document = newDoc }
+  setEditorState $ es { document = newDoc }
 processCommand fb (Huh c) = return (leesp "higgs" (show ("huh", c)) ())
 
 clipToFB (FrameBuffer (w, h)) (ViewPos x y) = ViewPos (clip x 0 w) (clip y 0 h)
