@@ -54,6 +54,7 @@ eeesp s a = unsafePerformIO $ do
 feesp s a = a
 
 sp x = unpack $ toStrict $ pShowNoColor $ x
+--sp x = show x
 msp x = putStrLn $ sp x
 
 -- Really surprised this doesn't exist

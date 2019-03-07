@@ -185,6 +185,12 @@ main = do
   --hSetBuffering stdout NoBuffering
   setSGR [Reset]
   es <- readFileInitState "sample.txt"
+  {-
+  let doc = document es
+   in do msp $ docToListAt doc (0, 0)
+         msp $ length $ docToListAt doc (0, 0)
+  error ""
+  -}
   withRawInput 0 1 $ editorLoopStart es
   putStrLn "done2"
   msp "done"

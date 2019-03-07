@@ -1,6 +1,7 @@
 module Document
 ( Document(..)
 , clipCursorToDocument
+, docToListAt
 , insertCharInDoc
 , readFileAsDoc
 , renderDocument
@@ -12,6 +13,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as C8
 import Data.ByteString.Builder (Builder, byteString)
 import qualified Data.ByteString.Builder as B
+import Data.Char (chr)
 import Data.Text (Text, pack, unpack)
 import Data.Vector (Vector, (!), (//))
 import Data.Word (Word8)
@@ -33,25 +35,55 @@ lineLength (Document lines) lineNo = BS.length (lines ! lineNo)
 type DocChar = Word8
 
 charToWord8 c = BS.index (C8.pack [c]) 0
+word8ToChar = chr . fromEnum
 
-charAt :: Document -> Int -> Int -> DocChar
---charAt _ x y | TR.trace (show ("hey", x, y)) False = undefined
-charAt (Document lines) x y
+docCharAt :: Document -> Int -> Int -> DocChar
+--docCharAt _ x y | TR.trace (show ("hey", x, y)) False = undefined
+docCharAt (Document lines) x y
   | x < 0 = conv ' '
   | y < 0 = conv ' '
   | y >= (V.length lines) = conv ' '
   | otherwise = ch x (lines ! y)
-  where ch x line | x >= (BS.length line) = conv ' '
-                  -- | x == (BS.length line) = conv ' '
+  where ch x line | x > (BS.length line) = conv ' '
+                  | x == (BS.length line) = conv '\n'
                   | otherwise = BS.index line x
         conv = charToWord8
+
+charAt doc x y = word8ToChar $ docCharAt doc x y
+
+-- Find the first location that satisfies the predicate
+--lookFor :: Document -> (Int, Int) -> ([Char] -> Bool) -> (Int, Int)
+
+docToListAt :: Document -> (Int, Int) -> [Char]
+docToListAt doc (x, y)
+  | atDocEnd doc (x, y) = []
+  -- | otherwise = (eesp (show ("um", x, y, (charAt doc x y))) (charAt doc x y)) : (eesp (show ("tR", theRest)) theRest)
+  | otherwise = (charAt doc x y) : theRest
+  where theRest = docToListAt doc (moveCursor doc (x, y) 1)
+
+--atDocEnd (Document lines) (x, y) | TR.trace (show ("heyy", x, y, V.length lines)) False = undefined
+atDocEnd (Document lines) (x, y)
+  | x == 0 && y == (V.length lines) = True
+  | y < (V.length lines) = False
+
+moveCursor :: Document -> (Int, Int) -> Int -> (Int, Int)
+--clipCursorToDocument _ (x, y) | TR.trace (lesp "higgs" (show ("ah", x, y))) False = undefined
+moveCursor doc (x, y) dx
+  | dx == 0 = (x, y)
+  | dx > 0 = let len = lineLength doc y
+              in if x > len -- not >=, because of the newline
+                   then moveCursor doc (0, y+1) (dx-1)
+                   else moveCursor doc (x + 1, y) (dx-1)
 
 slowRenderDocument :: FrameBuffer -> Document -> ViewPos -> Builder
 --slowRenderDocument fb doc vp | TR.trace (show (fb, doc, vp)) False = undefined
 slowRenderDocument (FrameBuffer (w, h)) doc (ViewPos vx vy) =
-  toBuilder $ [charAt doc (x + vx) (y + vy) | y <- [0..h-1], x <- [0..w-1]]
+  toBuilder $ [charToWord8 $ vis $ word8ToChar $ docCharAt doc (x + vx) (y + vy) | y <- [0..h-1], x <- [0..w-1]]
   where toBuilder :: [DocChar] -> Builder
         toBuilder ws = byteString $ BS.pack ws
+        -- Show newline as space
+        vis '\n' = ' '
+        vis c = c
 
 -- Move cursor to be within the boundaries of the document.
 -- Vertically, this means between the first and last lines (incl.)
