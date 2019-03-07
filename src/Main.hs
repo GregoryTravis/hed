@@ -99,6 +99,9 @@ render fb (EditorState { viewState = (ViewState vp@(ViewPos vx vy) (CursorPos cx
   setCursorPosition (cy - vy) (cx - vx)
   hFlush stdout
 
+moveCursor (EditorState { viewState = (ViewState (ViewPos vx vy) (CursorPos cx cy)) }) = do setCursorPosition (cy - vy) (cx - vx)
+                                                                                            hFlush stdout
+
 data Command = Dir Int Int | Insert Char | Huh String deriving (Eq, Show)
 
 keystrokeToCommand :: Char -> Command
@@ -146,22 +149,30 @@ processKeys fb keys = mapM_ (\key -> processCommand fb (keystrokeToCommand key))
 
 processKeysReturnState es fb keys = case (runState (processKeys fb keys) es) of ((), es') -> es'
 
-editorLoop :: EditorState -> FrameBuffer -> Maybe Int -> IO ()
-editorLoop es fb gen = do
+data Redraw = Full | MoveCursor | None deriving Show
+
+whatRedrawIsNeeded (EditorState { viewState = (ViewState ovp ocp), document = odoc }) (EditorState { viewState = (ViewState nvp ncp), document = ndoc })
+  | odoc /= ndoc = Full
+  | ovp /= nvp = Full
+  | ocp /= ncp = MoveCursor
+  | otherwise = None
+
+editorLoop :: EditorState -> FrameBuffer -> Bool -> IO ()
+editorLoop es fb firstTime = do
   --msp "loop"
   keystrokes <- readKeystrokes
   --let keystrokes = [] :: [Char]
   () <- if ((length keystrokes) == 0) then (return ()) else (debug fb keystrokes)
   let es' = processKeysReturnState es fb keystrokes
-      needsRedraw = case gen of Just oldGen -> oldGen /= (generation es')
-                                Nothing -> True
-  --msp needsRedraw
-  () <- if needsRedraw then render fb es' else return ()
-  editorLoop es' fb (Just $ generation es')
+  let redraw = if firstTime then Full else whatRedrawIsNeeded es es'
+  case redraw of Full -> render fb es'
+                 MoveCursor -> moveCursor es'
+                 None -> return ()
+  editorLoop es' fb False
 
 editorLoopStart es = do
   fb <- getFrameBuffer
-  editorLoop es fb Nothing
+  editorLoop es fb True
 
 data Foo = Foo { a :: Int, b :: String } deriving Show
 
