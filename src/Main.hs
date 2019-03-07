@@ -104,11 +104,15 @@ moveCursor (EditorState { viewState = (ViewState (ViewPos vx vy) (CursorPos cx c
 
 data Command = Dir Int Int | Insert Char | Huh String deriving (Eq, Show)
 
+--ctrl c = chr (1 + (ord c - (ord 'a')))
+
 keystrokeToCommand :: Char -> Command
 keystrokeToCommand 'h' = Dir (-1) 0
 keystrokeToCommand 'l' = Dir 1 0
 keystrokeToCommand 'j' = Dir 0 1
 keystrokeToCommand 'k' = Dir 0 (-1)
+keystrokeToCommand '\006' = Dir 0 10
+keystrokeToCommand '\002' = Dir 0 (-10)
 keystrokeToCommand 'a' = Insert 'a'
 keystrokeToCommand 'b' = Insert 'b'
 keystrokeToCommand c = Huh [c]
@@ -136,7 +140,7 @@ processCommand fb (Insert c) = do
   es@(EditorState { generation = generation, viewState = vs@(ViewState vp (CursorPos cx cy)), document = doc }) <- getEditorState
   let newDoc = insertCharInDoc doc cx cy c
   setEditorState $ es { generation = (generation + 1), document = newDoc }
-processCommand fb (Huh _) = return ()
+processCommand fb (Huh c) = return (leesp "higgs" (show ("huh", c)) ())
 
 clipToFB (FrameBuffer (w, h)) (ViewPos x y) = ViewPos (clip x 0 w) (clip y 0 h)
 clip x lo hi
@@ -145,7 +149,7 @@ clip x lo hi
   | otherwise = x
 
 processKeys :: FrameBuffer -> [Char] -> State EditorState ()
-processKeys fb keys = mapM_ (\key -> processCommand fb (keystrokeToCommand key)) keys
+processKeys fb keys = mapM_ (\key -> processCommand fb (lesp "higgs" (keystrokeToCommand key))) keys
 
 processKeysReturnState es fb keys = case (runState (processKeys fb keys) es) of ((), es') -> es'
 
