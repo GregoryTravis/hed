@@ -26,6 +26,8 @@ import Document
 import FrameBuffer
 import Util
 
+busyLoop = True
+
 box w h c = replicate h (pack (replicate w c))
 
 drawBox (startX, startY) box = do
@@ -73,15 +75,23 @@ readFileInitState filename = do
   return $ EditorState { viewState = (ViewState (ViewPos 0 0) (CursorPos 0 0)),
                          document = doc }
 
+readKeystrokeBlocking :: IO (Maybe Char)
+readKeystrokeBlocking = do c <- hGetChar stdin
+                           return $ Just c
+readKeystrokeMaybeNonBlocking :: IO (Maybe Char)
+readKeystrokeMaybeNonBlocking = do
+  ready <- hReady stdin
+  case ready of True -> do readKeystrokeBlocking
+                False -> return Nothing
+readKeystroke :: IO (Maybe Char)
+readKeystroke = if busyLoop then readKeystrokeMaybeNonBlocking else readKeystrokeBlocking
+
 readKeystrokes :: IO [Char]
 readKeystrokes = do
-  ready <- hReady stdin
-  --() <- if ready then msp ("ready", ready) else return ()
-  if ready then do c <- hGetChar stdin
-                   --msp ("lip", c)
-                   rest <- readKeystrokes
-                   return (c:rest)
-          else return []
+  k <- readKeystroke
+  case k of Just c -> do rest <- readKeystrokes
+                         return $ c : rest
+            Nothing -> return []
 
 -- Hstrip text (start, lenth) (x, y)
 data Hstrip = Hstrip Text (Int, Int) (Int, Int)
