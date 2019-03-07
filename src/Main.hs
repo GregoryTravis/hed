@@ -105,13 +105,15 @@ render fb (EditorState { viewState = (ViewState vp@(ViewPos vx vy) (CursorPos cx
   setCursorPosition (cy - vy) (cx - vx)
   hFlush stdout
 
-data Command = Dir Int Int | Huh String deriving (Eq, Show)
+data Command = Dir Int Int | Insert Char | Huh String deriving (Eq, Show)
 
 keystrokeToCommand :: Char -> Command
 keystrokeToCommand 'h' = Dir (-1) 0
 keystrokeToCommand 'l' = Dir 1 0
 keystrokeToCommand 'j' = Dir 0 1
 keystrokeToCommand 'k' = Dir 0 (-1)
+keystrokeToCommand 'a' = Insert 'a'
+keystrokeToCommand 'b' = Insert 'b'
 keystrokeToCommand c = Huh [c]
 
 getEditorState :: State EditorState EditorState
@@ -133,6 +135,10 @@ processCommand fb d@(Dir dx dy) = do
   let newCp = moveAndClipCursor doc cp d
   let newVp = viewPosFollowCursor fb newCp vp
   setEditorState $ EditorState { generation = (generation + 1), viewState = (ViewState newVp newCp), document = doc }
+processCommand fb (Insert c) = do
+  es@(EditorState { generation = generation, viewState = vs@(ViewState vp (CursorPos cx cy)), document = doc }) <- getEditorState
+  let newDoc = insertCharInDoc doc cx cy c
+  setEditorState $ EditorState { generation = (generation + 1), viewState = vs, document = newDoc }
 processCommand fb (Huh _) = return ()
 
 clipToFB (FrameBuffer (w, h)) (ViewPos x y) = ViewPos (clip x 0 w) (clip y 0 h)

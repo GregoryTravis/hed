@@ -1,6 +1,7 @@
 module Document
 ( Document(..)
 , clipCursorToDocument
+, insertCharInDoc
 , readFileAsDoc
 , renderDocument
 ) where
@@ -12,7 +13,7 @@ import qualified Data.ByteString.Char8 as C8
 import Data.ByteString.Builder (Builder, byteString)
 import qualified Data.ByteString.Builder as B
 import Data.Text (Text, pack, unpack)
-import Data.Vector (Vector, (!))
+import Data.Vector (Vector, (!), (//))
 import Data.Word (Word8)
 import qualified Data.Vector as V
 import qualified Debug.Trace as TR
@@ -31,6 +32,8 @@ lineLength (Document lines) lineNo = BS.length (lines ! lineNo)
 
 type DocChar = Word8
 
+charToWord8 c = BS.index (C8.pack [c]) 0
+
 charAt :: Document -> Int -> Int -> DocChar
 --charAt _ x y | TR.trace (show ("hey", x, y)) False = undefined
 charAt (Document lines) x y
@@ -41,7 +44,7 @@ charAt (Document lines) x y
   where ch x line | x >= (BS.length line) = conv ' '
                   -- | x == (BS.length line) = conv ' '
                   | otherwise = BS.index line x
-        conv c = BS.index (C8.pack [c]) 0
+        conv = charToWord8
 
 slowRenderDocument :: FrameBuffer -> Document -> ViewPos -> Builder
 --slowRenderDocument fb doc vp | TR.trace (show (fb, doc, vp)) False = undefined
@@ -62,6 +65,16 @@ clipCursorToDocument doc (x, y)
   | x > ll = clipCursorToDocument doc (ll, y)
   | otherwise = (x, y)
   where ll = lineLength doc y
+
+insertIntoLine :: ByteString -> Int -> Char -> ByteString
+insertIntoLine bs pos c = newBs
+  where lineList = BS.unpack bs
+        newLineList = (take pos lineList) ++ [(charToWord8 c)] ++ (drop pos lineList)
+        newBs = BS.pack newLineList
+
+insertCharInDoc (Document lines) x y c = Document newLines
+  where newLines = lines // [(y, newLine)]
+        newLine = insertIntoLine (lines ! y) x c
 
 readFileAsDoc :: String -> IO Document
 readFileAsDoc filename = do
