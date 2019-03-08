@@ -26,7 +26,7 @@ import Document
 import FrameBuffer
 import Util
 
-busyLoop = True
+busyLoop = False
 
 box w h c = replicate h (pack (replicate w c))
 
@@ -75,23 +75,26 @@ readFileInitState filename = do
   return $ EditorState { viewState = (ViewState (ViewPos 0 0) (CursorPos 0 0)),
                          document = doc }
 
-readKeystrokeBlocking :: IO (Maybe Char)
-readKeystrokeBlocking = do c <- hGetChar stdin
-                           return $ Just c
-readKeystrokeMaybeNonBlocking :: IO (Maybe Char)
-readKeystrokeMaybeNonBlocking = do
+readKeystrokesBlocking :: IO [Char]
+readKeystrokesBlocking = do c <- hGetChar stdin
+                            rest <- readKeystrokesNonBlocking
+                            return $ c : rest
+readKeystrokesNonBlocking :: IO [Char]
+readKeystrokesNonBlocking = do
   ready <- hReady stdin
-  case ready of True -> do readKeystrokeBlocking
-                False -> return Nothing
-readKeystroke :: IO (Maybe Char)
-readKeystroke = if busyLoop then readKeystrokeMaybeNonBlocking else readKeystrokeBlocking
+  case ready of True -> readKeystrokesBlocking
+                False -> return []
+readKeystrokes :: IO [Char]
+readKeystrokes = if busyLoop then readKeystrokesNonBlocking else readKeystrokesBlocking
 
+{-
 readKeystrokes :: IO [Char]
 readKeystrokes = do
   k <- readKeystroke
   case k of Just c -> do rest <- readKeystrokes
                          return $ c : rest
             Nothing -> return []
+-}
 
 -- Hstrip text (start, lenth) (x, y)
 data Hstrip = Hstrip Text (Int, Int) (Int, Int)
@@ -168,6 +171,7 @@ whatRedrawIsNeeded (EditorState { viewState = (ViewState ovp ocp), document = od
 
 editorLoop :: EditorState -> FrameBuffer -> Bool -> IO ()
 editorLoop es fb firstTime = do
+  if firstTime then render fb es else return ()
   --msp "loop"
   keystrokes <- readKeystrokes
   --let keystrokes = [] :: [Char]
