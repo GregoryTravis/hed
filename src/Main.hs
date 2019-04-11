@@ -253,9 +253,10 @@ main = do
   let noSpaces = L.filter ('\n' /=) $ L.filter (' ' /=) $ T.unpack t
   let fillScreen = take (wid * (ht-0) - 0) (cycle noSpaces)
   --time "putStr String" $ mapM_ (foo fillScreen) [0..99]
-  timeN "ha" (foo fillScreen) 100
+  timeN "ha" (foo fillScreen) 1000
   --threadDelay $ 101 * 1000000
   where foo s = do
-          clearScreen
+          --clearScreen
+          setCursorPosition 0 0
           putStr s
           hFlush stdout
