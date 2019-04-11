@@ -11,10 +11,15 @@ module Util
 , feesp
 , sp
 , msp
+, tsp
+, ttsp
+, tesp
+, ttesp
 , fromLeftReal
 , mappily
 , mcompose
 , time
+, timeN
 ) where
 
 import Control.Exception
@@ -22,6 +27,7 @@ import Control.Exception.Base
 import Data.Either
 import Data.Text (unpack)
 import Data.Text.Lazy (toStrict)
+import Data.Typeable (typeOf)
 import System.CPUTime
 import System.IO (appendFile)
 import System.IO.Unsafe
@@ -56,6 +62,11 @@ feesp s a = a
 sp x = unpack $ toStrict $ pShowNoColor $ x
 --sp x = show x
 msp x = putStrLn $ sp x
+
+tsp x = putStrLn $ (sp x) ++ " :: " ++ (sp (typeOf x))
+ttsp x = putStrLn $ "_ :: " ++ (sp (typeOf x))
+tesp x = eesp (sp x ++ " :: " ++ (sp (typeOf x))) x
+ttesp x = eesp ("_ :: " ++ (sp (typeOf x))) x
 
 -- Really surprised this doesn't exist
 fromLeftReal (Left a) = a
@@ -97,3 +108,13 @@ time s a = do
     --printf "%s %0.3f sec\n" s (diff :: Double)
     printf "%s %f sec\n" s (diff :: Double)
     return v
+
+timeN :: String -> IO t -> Int -> IO ()
+timeN s a n = do
+    let once i = a
+    start <- getCPUTime
+    mapM_ once [0..n-1]
+    end   <- getCPUTime
+    let diff = (fromIntegral (end - start)) / (10^12)
+    --printf "%s %0.3f sec\n" s (diff :: Double)
+    printf "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral n / diff)

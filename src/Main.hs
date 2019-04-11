@@ -12,7 +12,9 @@ import Data.ByteString.Builder (Builder, byteString)
 import qualified Data.ByteString.Builder as B
 import Data.Char (chr, ord)
 import Data.Monoid
+import qualified Data.List as L
 import qualified Data.Text as T
+import qualified Data.Text.IO as IO
 import Data.Text (Text, pack, unpack)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
@@ -189,7 +191,7 @@ editorLoopStart es = do
 
 data Foo = Foo { a :: Int, b :: String } deriving Show
 
-main = do
+_main = do
   hSetBuffering stdin NoBuffering
   --hSetBuffering stdout NoBuffering
   setSGR [Reset]
@@ -242,3 +244,18 @@ __main = do
                    setCursorPosition 0 0
                    putStr (fakes ! (mod i 26))
                    hFlush stdout
+
+main = do
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout (BlockBuffering Nothing)
+  (FrameBuffer (wid, ht)) <- getFrameBuffer
+  t <- IO.readFile "uni.txt"
+  let noSpaces = L.filter ('\n' /=) $ L.filter (' ' /=) $ T.unpack t
+  let fillScreen = take (wid * (ht-0) - 0) (cycle noSpaces)
+  --time "putStr String" $ mapM_ (foo fillScreen) [0..99]
+  timeN "ha" (foo fillScreen) 100
+  --threadDelay $ 101 * 1000000
+  where foo s = do
+          clearScreen
+          putStr s
+          hFlush stdout
