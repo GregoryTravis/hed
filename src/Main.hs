@@ -16,6 +16,9 @@ import qualified Data.List as L
 import qualified Data.Text as T
 import qualified Data.Text.IO as IO
 import Data.Text (Text, pack, unpack)
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TB
+import Data.Vector (Vector, (!))
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import Control.Monad.State
@@ -251,12 +254,57 @@ main = do
   (FrameBuffer (wid, ht)) <- getFrameBuffer
   t <- IO.readFile "uni.txt"
   let noSpaces = L.filter ('\n' /=) $ L.filter (' ' /=) $ T.unpack t
-  let fillScreen = take (wid * (ht-0) - 0) (cycle noSpaces)
+  let fillScreenString = take (wid * (ht-0) - 0) (cycle noSpaces)
+  let fillScreenText = T.pack fillScreenString
+  --let charAt x y = fillScreenString !! (x + y * wid)
+  --let row y = V.generate wid (\x -> charAt x y)
+  let fillScreenV2 :: V.Vector (V.Vector Char)
+      fillScreenV2 = V.generate ht row
+        where row y = V.generate wid (\x -> charAt x y)
+              charAt x y = fillScreenString !! (x + y * wid)
   --time "putStr String" $ mapM_ (foo fillScreen) [0..99]
-  timeN "ha" (foo fillScreen) 1000
+  wsResult <- timeN "writeString" (writeString fillScreenString) 1000
+  wtResult <- timeN "writeText" (writeText fillScreenText) 1000
+  wscResult <- timeN "writeStringConvert" (writeStringConvert fillScreenString) 1000
+  wv2Result <- timeN "writeV2" (writeV2 fillScreenV2) 1000
+  wv2cResult <- timeN "writeV2Convert" (writeV2Convert fillScreenV2) 1000
+  --timeN "writeString" (writeString fillScreenString) 1000
+  --timeN "writeText" (writeText fillScreenText) 1000
+  msp wsResult
+  msp wtResult
+  msp wscResult
+  msp wv2Result
+  msp wv2cResult
   --threadDelay $ 101 * 1000000
-  where foo s = do
-          --clearScreen
+  where writeString s = do
+          clearScreen
           setCursorPosition 0 0
           putStr s
           hFlush stdout
+        writeStringConvert s = do
+          clearScreen
+          setCursorPosition 0 0
+          IO.hPutStr stdout $ T.pack s
+          hFlush stdout
+        writeText t = do
+          clearScreen
+          setCursorPosition 0 0
+          IO.hPutStr stdout t
+          hFlush stdout
+        writeV2 v2 = do
+          clearScreen
+          setCursorPosition 0 0
+          mapM_ writeV v2
+          hFlush stdout
+        writeV v = do
+          mapM_ (hPutChar stdout) v
+        writeV2Convert v2 = do
+          clearScreen
+          setCursorPosition 0 0
+          IO.hPutStr stdout (convertV2Text v2)
+          hFlush stdout
+        convertV2Text :: V.Vector (V.Vector Char) -> Text
+        convertV2Text v2 = TL.toStrict $ TB.toLazyText $ V.foldl (\a v -> (a <> (convertVText v)))  mempty v2
+        convertVText :: V.Vector Char -> TB.Builder
+-- foldl :: (a -> b -> a) -> a -> Vector b -> a
+        convertVText v = V.foldl (\a b -> (a <> (TB.singleton b))) mempty v

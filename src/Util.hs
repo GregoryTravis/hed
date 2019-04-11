@@ -109,7 +109,7 @@ time s a = do
     printf "%s %f sec\n" s (diff :: Double)
     return v
 
-timeN :: String -> IO t -> Int -> IO ()
+timeN :: String -> IO t -> Int -> IO String
 timeN s a n = do
     let once i = a
     start <- getCPUTime
@@ -117,4 +117,5 @@ timeN s a n = do
     end   <- getCPUTime
     let diff = (fromIntegral (end - start)) / (10^12)
     --printf "%s %0.3f sec\n" s (diff :: Double)
-    printf "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral n / diff)
+    --return $ "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral n / diff)
+    return $ printf "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral n / diff)
