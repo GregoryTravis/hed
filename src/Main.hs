@@ -254,34 +254,43 @@ main = do
   (FrameBuffer (wid, ht)) <- getFrameBuffer
   t <- IO.readFile "uni.txt"
   let noSpaces = L.filter ('\n' /=) $ L.filter (' ' /=) $ T.unpack t
-  let fillScreenString = take (wid * (ht-0) - 0) (cycle noSpaces)
-  let fillScreenText = T.pack fillScreenString
+  let fillScreenString i = take (wid * (ht-0) - 0) (drop i (cycle noSpaces))
+  let fillScreenText i = T.pack $ fillScreenString i
   --let charAt x y = fillScreenString !! (x + y * wid)
   --let row y = V.generate wid (\x -> charAt x y)
+{-
   let stringToV2 :: String -> V.Vector (V.Vector Char)
       stringToV2 s = V.generate ht row
         where row y = V.generate wid (\x -> charAt x y)
               charAt x y = s !! (x + y * wid)
       fillScreenV2 = stringToV2 fillScreenString
       rah i = stringToV2 (drop i (cycle fillScreenString))
-      fillScreenV2s = map rah [0..9]
+      fillScreenV2s = map rah [0..99]
+-}
   --time "putStr String" $ mapM_ (foo fillScreen) [0..99]
-  wsResult <- timeN "writeStrng" (writeString fillScreenString) 1000
-  wtResult <- timeN "writeText" (writeText fillScreenText) 1000
-  wscResult <- timeN "writeStringConvert" (writeStringConvert fillScreenString) 1000
-  wv2Result <- timeN "writeV2" (writeV2 fillScreenV2) 1000
-  wv2cResult <- timeN "writeV2Convert" (writeV2Convert fillScreenV2) 1000
-  wv2cmResult <- timeN "writeV2ConvertMany" (writeV2ConvertMany fillScreenV2s) 1
-  wv2cmResult2 <- timeN "writeV2ConvertMany" (writeV2ConvertMany fillScreenV2s) 1
+  wsResult <- timeList "writeStrngs" (map writeString (map fillScreenString [0..99])) 1
+  wsResult2 <- timeList "writeStrngs2" (map writeString (map fillScreenString [0..99])) 1
+  let verp = (map fillScreenString [0..99])
+  wsResult3 <- timeList "writeStrngs2" (map writeString verp) 1
+  wsResult4 <- timeList "writeStrngs2" (map writeString verp) 1
+  wscResult <- timeList "writeStringConvert" (map writeStringConvert (map fillScreenString [0..99])) 1
+  --wtResult <- timeN "writeText" (writeText fillScreenText) 1000
+  --wv2Result <- timeN "writeV2" (writeV2 fillScreenV2) 1000
+  --wv2cResult <- timeN "writeV2Convert" (writeV2Convert fillScreenV2) 1000
+  --wv2cmResult <- timeN "writeV2ConvertMany" (writeV2ConvertMany fillScreenV2s) 1
+  --wv2cmResult2 <- timeN "writeV2ConvertMany2" (writeV2ConvertMany fillScreenV2s) 1
   --timeN "writeString" (writeString fillScreenString) 1000
   --timeN "writeText" (writeText fillScreenText) 1000
   msp wsResult
-  msp wtResult
+  msp wsResult2
+  msp wsResult3
+  msp wsResult4
   msp wscResult
-  msp wv2Result
-  msp wv2cResult
-  msp wv2cmResult
-  msp wv2cmResult2
+  --msp wtResult
+  --msp wv2Result
+  --msp wv2cResult
+  --msp wv2cmResult
+  --msp wv2cmResult2
   --threadDelay $ 101 * 1000000
   where writeString s = do
           clearScreen

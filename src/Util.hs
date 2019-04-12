@@ -20,6 +20,7 @@ module Util
 , mcompose
 , time
 , timeN
+, timeList
 ) where
 
 import Control.Exception
@@ -119,3 +120,14 @@ timeN s a n = do
     --printf "%s %0.3f sec\n" s (diff :: Double)
     --return $ "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral n / diff)
     return $ printf "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral n / diff)
+
+timeList :: String -> [IO t] -> Int -> IO String
+timeList s as n = do
+    let once i = sequence_ as
+    start <- getCPUTime
+    mapM_ once [0..n-1]
+    end   <- getCPUTime
+    let diff = (fromIntegral (end - start)) / (10^12)
+    --printf "%s %0.3f sec\n" s (diff :: Double)
+    --return $ "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral n / diff)
+    return $ printf "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral (n * (length as)) / diff)
