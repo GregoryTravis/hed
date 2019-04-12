@@ -4,6 +4,7 @@ module Main where
 
 import Control.Concurrent (threadDelay)
 import Control.Exception (finally, catch, IOException)
+import Control.Monad.State
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
@@ -21,7 +22,7 @@ import qualified Data.Text.Lazy.Builder as TB
 import Data.Vector (Vector, (!))
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
-import Control.Monad.State
+import Linear
 import System.Console.ANSI
 import System.IO
 import System.Posix.IO (fdRead, stdInput)
@@ -29,7 +30,7 @@ import System.Posix.Terminal
 
 import Document
 import FrameBuffer
-import SpeedTests
+import RectSampler
 import Util
 
 busyLoop = False
@@ -249,4 +250,34 @@ __main = do
                    putStr (fakes ! (mod i 26))
                    hFlush stdout
 
-main = speedTests
+displayString s = do
+  setCursorPosition 0 0
+  putStr s
+  hFlush stdout
+
+_sampler (V2 w h) (V2 x y) = boop ((x + y) `mod` 2)
+  where boop 0 = '#'
+        boop 1 = '.'
+
+--sampler (V2 w h) (V2 x y) = chr $ 48 + ((x + y) `mod` 10)
+
+sampler (V2 w h) (V2 x y)
+  | x == y && top = '/'
+  | x == (w - y - 1) && top = '\\'
+  | (x > y && x < (w - y - 1)) && top = '-'
+  | x == (h - y - 1) = '\\'
+  | x < (h - y - 1) = '|'
+  | (w - x - 1) == (h - y - 1) = '/'
+  | (w - x - 1) < (h - y - 1) = '|'
+  | top = '|'
+  | otherwise = '-'
+  where top = y < (h `div` 2)
+
+main = do
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout (BlockBuffering Nothing)
+  (FrameBuffer (w, h)) <- getFrameBuffer
+  displayString $ sampleToString sampler (V2 w h)
+  --msp (w, h)
+  hFlush stdout
+  threadDelay $ 100 * 1000000
