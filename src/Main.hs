@@ -274,6 +274,10 @@ main = do
   wsResult3 <- timeList "writeStrngs2" (map writeString verp) 1
   wsResult4 <- timeList "writeStrngs2" (map writeString verp) 1
   wscResult <- timeList "writeStringConvert" (map writeStringConvert (map fillScreenString [0..99])) 1
+  wscResult2 <- timeList "writeStringConvert" (map writeStringConvert (map fillScreenString [0..99])) 1
+  let verp2 = (map fillScreenString [0..99])
+  wscResult3 <- timeList "writeStringConvert" (map writeStringConvert verp2) 1
+  wscResult4 <- timeList "writeStringConvert" (map writeStringConvert verp2) 1
   --wtResult <- timeN "writeText" (writeText fillScreenText) 1000
   --wv2Result <- timeN "writeV2" (writeV2 fillScreenV2) 1000
   --wv2cResult <- timeN "writeV2Convert" (writeV2Convert fillScreenV2) 1000
@@ -286,6 +290,9 @@ main = do
   msp wsResult3
   msp wsResult4
   msp wscResult
+  msp wscResult2
+  msp wscResult3
+  msp wscResult4
   --msp wtResult
   --msp wv2Result
   --msp wv2cResult
@@ -293,15 +300,17 @@ main = do
   --msp wv2cmResult2
   --threadDelay $ 101 * 1000000
   where writeString s = do
-          clearScreen
+          --clearScreen
           setCursorPosition 0 0
-          putStr s
+          timing <- time "put string" $ putStr s
           hFlush stdout
+          msp timing
         writeStringConvert s = do
-          clearScreen
+          --clearScreen
           setCursorPosition 0 0
-          IO.hPutStr stdout $ T.pack s
+          timing <- time "put text" $ IO.hPutStr stdout $ T.pack s
           hFlush stdout
+          msp timing
         writeText t = do
           clearScreen
           setCursorPosition 0 0
