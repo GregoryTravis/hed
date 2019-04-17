@@ -329,20 +329,39 @@ windowChangeHandler chan = do
   --j <- getTerminalSize
   --msp ("size", j)
 
-sendFakeResizeEvent chan = writeChan chan ResizeEvent
+sendFakeResizeEvent chan = do
+  msp "send fake"
+  writeChan chan ResizeEvent
 
 updateTerminalSize eventChan = do
+  msp "updateTerminalSize"
   j <- getTerminalSize
+  msp ("updateTerminalSize", j)
   case j of Just (w, h) -> msp ("size", j)
-            Nothing -> sendFakeResizeEvent eventChan
+            Nothing -> do msp "sending fake"
+                          sendFakeResizeEvent eventChan
+  msp "updateTerminalSize done"
 
 installHandlers chan = do
   installHandler keyboardSignal (Catch (keyboardSignalHandler chan)) Nothing
   installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
 
+inputReader chan = do
+  c <- hGetChar stdin
+  writeChan chan (KeyEvent c)
+  inputReader chan
+
+quit = do
+  msp "quitting"
+  exitSuccess
+
 main = do
   hSetBuffering stdin NoBuffering
+  -- This seems to require return after ^c, while BlockBuffering Nothing does
+  -- not
+  hSetBuffering stdout NoBuffering
   --hSetBuffering stdout (BlockBuffering Nothing)
+
   eventChan <- newChan :: IO (Chan Event)
   installHandlers eventChan
   msp "hi"
@@ -350,12 +369,19 @@ main = do
                 threadDelay 10000
                 spew
   --forkIO spew
+  --forkIO $ inputReader eventChan
   let loop = do
         msp "loop"
         event <- readChan eventChan
         msp ("Loop event", event)
         case event of ResizeEvent -> updateTerminalSize eventChan
-                      QuitEvent -> do exitSuccess
+                      QuitEvent -> quit
+                      KeyEvent c -> do msp ("key", c)
+        msp "looping"
         loop
   loop
   threadDelay $ 100 * 1000000
+-- todo: updateTerminalSize is blocking the main thread, it should
+-- be decoupled; and getTerminalSize is blocking on the input read
+-- System.IO says without -threaded, reading will block all other
+-- threads?
