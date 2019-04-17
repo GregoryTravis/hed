@@ -25,6 +25,7 @@ import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import Linear
 import System.Console.ANSI
+import System.Exit
 import System.IO
 import System.Posix.IO (fdRead, stdInput)
 import System.Posix.Signals
@@ -295,7 +296,14 @@ handler = do
   j <- getTerminalSize
   msp ("size", j)
 
-main = do
+data Event =
+  KeyEvent Char |
+  ResizeEvent |
+  RedisplayEvent Char |
+  QuitEvent
+  deriving (Show)
+  
+chanmain = do
   installHandler windowChange (Catch handler) Nothing
   chan <- newChan -- :: Chan Int
   mainThreadId <- myThreadId
@@ -307,4 +315,47 @@ main = do
   a <- readChan chan
   msp a
   msp "hi"
+  threadDelay $ 100 * 1000000
+
+keyboardSignalHandler chan = do
+  msp "keyboardSignal handler"
+  writeChan chan QuitEvent
+  --j <- getTerminalSize
+  --msp ("size", j)
+
+windowChangeHandler chan = do
+  msp "windowChange handler"
+  writeChan chan ResizeEvent
+  --j <- getTerminalSize
+  --msp ("size", j)
+
+sendFakeResizeEvent chan = writeChan chan ResizeEvent
+
+updateTerminalSize eventChan = do
+  j <- getTerminalSize
+  case j of Just (w, h) -> msp ("size", j)
+            Nothing -> sendFakeResizeEvent eventChan
+
+installHandlers chan = do
+  installHandler keyboardSignal (Catch (keyboardSignalHandler chan)) Nothing
+  installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
+
+main = do
+  hSetBuffering stdin NoBuffering
+  --hSetBuffering stdout (BlockBuffering Nothing)
+  eventChan <- newChan :: IO (Chan Event)
+  installHandlers eventChan
+  msp "hi"
+  let spew = do msp "asdf"
+                threadDelay 10000
+                spew
+  --forkIO spew
+  let loop = do
+        msp "loop"
+        event <- readChan eventChan
+        msp ("Loop event", event)
+        case event of ResizeEvent -> updateTerminalSize eventChan
+                      QuitEvent -> do exitSuccess
+        loop
+  loop
   threadDelay $ 100 * 1000000
