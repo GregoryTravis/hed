@@ -2,7 +2,8 @@
 
 module Main where
 
-import Control.Concurrent (threadDelay)
+import Control.Concurrent
+import Control.Concurrent.Chan
 import Control.Exception (finally, catch, IOException)
 import Control.Monad.State
 import Data.ByteString (ByteString)
@@ -26,6 +27,8 @@ import Linear
 import System.Console.ANSI
 import System.IO
 import System.Posix.IO (fdRead, stdInput)
+import System.Posix.Signals
+import System.Posix.Signals.Exts
 import System.Posix.Terminal
 
 import Document
@@ -273,11 +276,35 @@ sampler (V2 w h) (V2 x y)
   | otherwise = '-'
   where top = y < (h `div` 2)
 
-main = do
+drawmain = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout (BlockBuffering Nothing)
   (FrameBuffer (w, h)) <- getFrameBuffer
   displayString $ sampleToString sampler (V2 w h)
   --msp (w, h)
   hFlush stdout
+  threadDelay $ 100 * 1000000
+
+-- Note: this doesn't always work, since it requires putting
+-- the cursor in the corner and getting the position; probably
+-- this should be only done when nothing is being drawn; it should
+-- also be retried, perhaps after sleeping
+handler :: IO ()
+handler = do
+  msp "handler"
+  j <- getTerminalSize
+  msp ("size", j)
+
+main = do
+  installHandler windowChange (Catch handler) Nothing
+  chan <- newChan -- :: Chan Int
+  mainThreadId <- myThreadId
+  msp ("main", mainThreadId)
+  forkIO $ do
+    otherThreadId <- myThreadId
+    msp ("other", otherThreadId)
+    writeChan chan 12
+  a <- readChan chan
+  msp a
+  msp "hi"
   threadDelay $ 100 * 1000000
