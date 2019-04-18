@@ -457,6 +457,8 @@ main = do
   let catcher :: AsyncException -> IO ()
       catcher e = do
         msp "catcher"
+        killThread otherThreadId
+        msp ("killed", otherThreadId)
         exitSuccess
   catch loop catcher
   threadDelay $ 100 * 1000000
