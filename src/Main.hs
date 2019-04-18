@@ -4,7 +4,7 @@ module Main where
 
 import Control.Concurrent
 import Control.Concurrent.Chan
-import Control.Exception (finally, catch, IOException)
+import Control.Exception (finally, catch, IOException, AsyncException(..))
 import Control.Monad.State
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -317,11 +317,21 @@ chanmain = do
   msp "hi"
   threadDelay $ 100 * 1000000
 
+reportThread = do
+  tid <- myThreadId
+  msp ("thread", tid)
+
 keyboardSignalHandler chan = do
   msp "keyboardSignal handler"
+  reportThread
   writeChan chan QuitEvent
+  --installHandler keyboardSignal (Catch originalHandler) Nothing
+  --removeKeyboardSignalHandler
+  --return ()
   --j <- getTerminalSize
   --msp ("size", j)
+
+removeKeyboardSignalHandler = installHandler keyboardSignal Default Nothing
 
 windowChangeHandler chan = do
   msp "windowChange handler"
@@ -335,27 +345,88 @@ sendFakeResizeEvent chan = do
 
 updateTerminalSize eventChan = do
   msp "updateTerminalSize"
+  saveCursor
+  setCursorPosition 999 999
+  reportCursorPosition
+  msp "updateTerminalSize done"
+{-
   j <- getTerminalSize
   msp ("updateTerminalSize", j)
   case j of Just (w, h) -> msp ("size", j)
             Nothing -> do msp "sending fake"
                           sendFakeResizeEvent eventChan
   msp "updateTerminalSize done"
+-}
 
 installHandlers chan = do
-  installHandler keyboardSignal (Catch (keyboardSignalHandler chan)) Nothing
-  installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
+  --origKeyboardHandler <- installHandler keyboardSignal (Catch (keyboardSignalHandler chan)) Nothing
+  let origKeyboardHandler = Default
+  origWindowChangeHandler <- installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
+  return [origKeyboardHandler, origKeyboardHandler]
+
+installNumbries = mapM_ foo [0..64]
+  where foo i = installHandler i (Catch (bar i)) Nothing
+        bar i = msp ("Numbrie", i)
 
 inputReader chan = do
   c <- hGetChar stdin
   writeChan chan (KeyEvent c)
   inputReader chan
 
-quit = do
+quit :: Handler -> Handler -> IO ()
+quit origKeyboardHandler origWindowChangeHandler = do
+  installHandler keyboardSignal origKeyboardHandler Nothing
+  installHandler windowChange origWindowChangeHandler Nothing
   msp "quitting"
+  reportThread
   exitSuccess
+  --raiseSignal keyboardSignal
+  msp "quitting2"
 
 main = do
+{-
+  hSetBuffering stdout NoBuffering
+  hSetBuffering stdin NoBuffering
+  hSetEcho stdin False
+
+  let loop = do c <- hGetChar stdin
+                msp ("c", c)
+                loop
+  threadDelay 1000000
+  forkIO loop
+
+  -- Use bracket?
+  saveCursor
+  setCursorPosition 999 999
+  reportCursorPosition
+
+  threadDelay 100000000
+  let req = do threadDelay 500000
+               putStr "\ESC[6n"
+               hFlush stdout
+  forkIO req
+  b <- hWaitForInput stdin (-1)
+  msp b
+  threadDelay 100000000
+  --forkIO $ do c <- hGetChar stdin
+              --msp (show c)
+              --msp "hi"
+  let rt = do b <- hWaitForInput stdin (-1)
+              msp (show b)
+              msp "hi"
+  --forkIO rt
+  let loopp = do msp "loopp"
+                 threadDelay 500000
+                 loopp
+  --forkIO $ do loopp
+  threadDelay 1000000
+  msp "ok"
+  hFlush stdout
+  --j <- getTerminalSize
+  --msp j
+  threadDelay 100000000
+-}
+
   hSetBuffering stdin NoBuffering
   -- This seems to require return after ^c, while BlockBuffering Nothing does
   -- not
@@ -363,25 +434,35 @@ main = do
   --hSetBuffering stdout (BlockBuffering Nothing)
 
   eventChan <- newChan :: IO (Chan Event)
-  installHandlers eventChan
+  [origKeyboardHandler, origWindowChangeHandler] <- installHandlers eventChan
   msp "hi"
+  --installNumbries
   let spew = do msp "asdf"
-                threadDelay 10000
+                threadDelay 1000000
                 spew
-  --forkIO spew
+  otherThreadId <- forkIO spew
   --forkIO $ inputReader eventChan
   let loop = do
         msp "loop"
         event <- readChan eventChan
         msp ("Loop event", event)
         case event of ResizeEvent -> updateTerminalSize eventChan
-                      QuitEvent -> quit
+                      QuitEvent -> do 
+                                      killThread otherThreadId
+                                      msp ("killed", otherThreadId)
+                                      quit origKeyboardHandler origWindowChangeHandler
                       KeyEvent c -> do msp ("key", c)
         msp "looping"
         loop
-  loop
+  let catcher :: AsyncException -> IO ()
+      catcher e = do
+        msp "catcher"
+        exitSuccess
+  catch loop catcher
   threadDelay $ 100 * 1000000
 -- todo: updateTerminalSize is blocking the main thread, it should
 -- be decoupled; and getTerminalSize is blocking on the input read
 -- System.IO says without -threaded, reading will block all other
 -- threads?
+-- Probably have to http://neilmitchell.blogspot.com/2015/05/handling-control-c-in-haskell.html
+-- In ghci, do this? https://stackoverflow.com/questions/46722102/how-to-be-certain-that-all-threads-have-been-killed-upon-pressing-ctrlc
