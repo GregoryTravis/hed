@@ -440,8 +440,8 @@ main = do
   let spew = do msp "asdf"
                 threadDelay 1000000
                 spew
-  otherThreadId <- forkIO spew
-  --forkIO $ inputReader eventChan
+  --otherThreadId <- forkIO spew
+  otherThreadId <- forkIO $ inputReader eventChan
   let loop = do
         msp "loop"
         event <- readChan eventChan
