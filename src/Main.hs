@@ -319,46 +319,23 @@ chanmain = do
   msp "hi"
   threadDelay $ 100 * 1000000
 
-reportThread = do
-  tid <- myThreadId
-  msp ("thread", tid)
-
-keyboardSignalHandler chan = do
-  msp "keyboardSignal handler"
-  reportThread
-  writeChan chan QuitEvent
-  --installHandler keyboardSignal (Catch originalHandler) Nothing
-  --removeKeyboardSignalHandler
-  --return ()
-  --j <- getTerminalSize
-  --msp ("size", j)
-
-removeKeyboardSignalHandler = installHandler keyboardSignal Default Nothing
-
 windowChangeHandler chan = do
   msp "windowChange handler"
   writeChan chan ResizeEvent
   --j <- getTerminalSize
   --msp ("size", j)
 
+{-
 sendFakeResizeEvent chan = do
   msp "send fake"
   writeChan chan ResizeEvent
+-}
 
 updateTerminalSize eventChan = do
-  msp "updateTerminalSize"
+  --msp "updateTerminalSize"
   saveCursor
   setCursorPosition 999 999
   reportCursorPosition
-  --msp "updateTerminalSize done"
-{-
-  j <- getTerminalSize
-  msp ("updateTerminalSize", j)
-  case j of Just (w, h) -> msp ("size", j)
-            Nothing -> do msp "sending fake"
-                          sendFakeResizeEvent eventChan
-  msp "updateTerminalSize done"
--}
 
 installHandlers chan = do
   origWindowChangeHandler <- installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
@@ -399,12 +376,9 @@ inputReader chan = do
 
 quit :: Handler -> IO ()
 quit origWindowChangeHandler = do
+  msp "exiting"
   installHandler windowChange origWindowChangeHandler Nothing
-  msp "quitting"
-  reportThread
   exitSuccess
-  --raiseSignal keyboardSignal
-  msp "quitting2"
 
 main = do
   hSetBuffering stdin NoBuffering
@@ -415,18 +389,15 @@ main = do
   origWindowChangeHandler <- installHandlers eventChan
   otherThreadId <- forkIO $ inputReader eventChan
   let loop = do
-        msp "loop"
         event <- readChan eventChan
         msp ("Loop event", event)
         case event of ResizeEvent -> updateTerminalSize eventChan
                       QuitEvent -> do 
                                       killThread otherThreadId
-                                      msp "exiting"
                                       quit origWindowChangeHandler
                       GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
                       KeyEvent 'q' -> writeChan eventChan QuitEvent
                       KeyEvent c -> msp ("key", c)
-        msp "looping"
         loop
   let catcher :: AsyncException -> IO ()
       catcher e = do
