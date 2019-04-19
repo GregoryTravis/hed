@@ -361,10 +361,8 @@ updateTerminalSize eventChan = do
 -}
 
 installHandlers chan = do
-  --origKeyboardHandler <- installHandler keyboardSignal (Catch (keyboardSignalHandler chan)) Nothing
-  let origKeyboardHandler = Default
   origWindowChangeHandler <- installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
-  return [origKeyboardHandler, origKeyboardHandler]
+  return origWindowChangeHandler
 
 data ParseState = Esc | LSQB | FirstDigit | SecondDigit | Success | Fail
   deriving (Eq, Ord)
@@ -399,9 +397,8 @@ inputReader chan = do
             (False, s) -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
   inputReader chan
 
-quit :: Handler -> Handler -> IO ()
-quit origKeyboardHandler origWindowChangeHandler = do
-  installHandler keyboardSignal origKeyboardHandler Nothing
+quit :: Handler -> IO ()
+quit origWindowChangeHandler = do
   installHandler windowChange origWindowChangeHandler Nothing
   msp "quitting"
   reportThread
@@ -412,10 +409,10 @@ quit origKeyboardHandler origWindowChangeHandler = do
 main = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
-  msp "hi"
+  msp "Hed start"
 
   eventChan <- newChan :: IO (Chan Event)
-  [origKeyboardHandler, origWindowChangeHandler] <- installHandlers eventChan
+  origWindowChangeHandler <- installHandlers eventChan
   otherThreadId <- forkIO $ inputReader eventChan
   let loop = do
         msp "loop"
@@ -423,23 +420,19 @@ main = do
         msp ("Loop event", event)
         case event of ResizeEvent -> updateTerminalSize eventChan
                       QuitEvent -> do 
-                                      msp "nice quit"
                                       killThread otherThreadId
-                                      msp ("killed", otherThreadId)
-                                      quit origKeyboardHandler origWindowChangeHandler
+                                      msp "exiting"
+                                      quit origWindowChangeHandler
                       GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
                       KeyEvent c -> do msp ("key", c)
         msp "looping"
         loop
   let catcher :: AsyncException -> IO ()
       catcher e = do
-        msp "catcher"
+        --msp "catcher"
         writeChan eventChan QuitEvent
         catch loop catcher
-        --killThread otherThreadId
-        --msp ("killed", otherThreadId)
-        --exitSuccess
   catch loop catcher
-  threadDelay $ 100 * 1000000
+
 -- Probably have to http://neilmitchell.blogspot.com/2015/05/handling-control-c-in-haskell.html
 -- In ghci, do this? https://stackoverflow.com/questions/46722102/how-to-be-certain-that-all-threads-have-been-killed-upon-pressing-ctrlc
