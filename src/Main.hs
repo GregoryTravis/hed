@@ -12,7 +12,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as C8
 import Data.ByteString.Builder (Builder, byteString)
 import qualified Data.ByteString.Builder as B
-import Data.Char (chr, ord)
+import Data.Char (chr, ord, isDigit)
 import qualified Data.Map as M
 import Data.Monoid
 import qualified Data.List as L
@@ -377,37 +377,25 @@ stateMachine = M.fromList
   , (SecondDigit, \c -> if c >= '0' && c <= '9' then SecondDigit else if c == 'R' then Success else Fail)
   ]
 
-parseSizeReport :: IO (Bool, String)
-parseSizeReport = step Esc []
+recognizeSizeReport :: IO (Bool, String)
+recognizeSizeReport = step Esc []
   where step :: ParseState -> String -> IO (Bool, String)
         step state sofar = do
           c <- getChar
           case (stateMachine M.! state) c of Success -> return (True, sofar ++ [c])
                                              Fail -> return (False, sofar ++ [c])
                                              next -> step next (sofar ++ [c])
-{-
-        seeEsc = \c -> if c == '\ESC' then seeLSQB else parseFailure
-        seeLSQB = \c -> if c == '[' then seeFirstDigit else parseFailure
-        seeFirstDigit = \c -> if c >= '0' && c <= '9' then seeFirstDigit else if c == ';' then seeSecondDigit else parseFailure
-        seeSecondDigit = \c -> if c >= '0' && c <= '9' then seeFirstDigit else if c == 'R' then success else parseFailure
-        parseFailure = \c -> undefined
-        success = \c -> undefined
-        step :: (Char -> 
-        step recognizer sofar = do
-          c <- getChar
-          msp ("c", c)
-          case recognizer c of success -> (True, sofar)
-                               parseFailure -> (False, sofar)
-                               next -> step next (sofar ++ [c])
--}
 
---readCharOrSizeReport :: IO (Either (w, h) [Char])
+parseSizeReport :: String -> (Int, Int)
+parseSizeReport s = (read first, read second)
+  where first = takeWhile isDigit $ drop 2 s
+        second = takeWhile isDigit $ drop 1 $ dropWhile isDigit $ drop 2 s
 
 inputReader chan = do
   --c <- hGetChar stdin
-  p <- parseSizeReport
+  p <- recognizeSizeReport
   msp ("parse", p)
-  case p of (True, s) -> writeChan chan (GotWindowSizeEvent (3, 4))
+  case p of (True, s) -> writeChan chan (GotWindowSizeEvent (parseSizeReport s))
             (False, s) -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
   inputReader chan
 
