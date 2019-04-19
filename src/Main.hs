@@ -380,10 +380,23 @@ quit origWindowChangeHandler = do
   installHandler windowChange origWindowChangeHandler Nothing
   exitSuccess
 
+
+
+vvhandler :: MVar Int -> IO ()
+vvhandler s_interrupted = do putStrLn "HI"
+                             modifyMVar_ s_interrupted (return . (+1))
+
 main = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
   msp "Hed start"
+
+{- -- This might work; the problem might have been the 'g' wrapper
+  s_interrupted <- newMVar 0
+  installHandler sigINT (Catch $ vvhandler s_interrupted) Nothing
+  installHandler sigTERM (Catch $ vvhandler s_interrupted) Nothing
+  threadDelay $ 100 * 1000000
+-}
 
   eventChan <- newChan :: IO (Chan Event)
   origWindowChangeHandler <- installHandlers eventChan
@@ -406,5 +419,6 @@ main = do
         catch loop catcher
   catch loop catcher
 
+-- It actually might have been the build/exec wrapper in g
 -- Probably have to http://neilmitchell.blogspot.com/2015/05/handling-control-c-in-haskell.html
 -- In ghci, do this? https://stackoverflow.com/questions/46722102/how-to-be-certain-that-all-threads-have-been-killed-upon-pressing-ctrlc
