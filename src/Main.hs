@@ -423,6 +423,7 @@ main = do
         msp ("Loop event", event)
         case event of ResizeEvent -> updateTerminalSize eventChan
                       QuitEvent -> do 
+                                      msp "nice quit"
                                       killThread otherThreadId
                                       msp ("killed", otherThreadId)
                                       quit origKeyboardHandler origWindowChangeHandler
@@ -433,9 +434,11 @@ main = do
   let catcher :: AsyncException -> IO ()
       catcher e = do
         msp "catcher"
-        killThread otherThreadId
-        msp ("killed", otherThreadId)
-        exitSuccess
+        writeChan eventChan QuitEvent
+        catch loop catcher
+        --killThread otherThreadId
+        --msp ("killed", otherThreadId)
+        --exitSuccess
   catch loop catcher
   threadDelay $ 100 * 1000000
 -- Probably have to http://neilmitchell.blogspot.com/2015/05/handling-control-c-in-haskell.html
