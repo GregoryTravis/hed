@@ -424,7 +424,8 @@ main = do
                                       msp "exiting"
                                       quit origWindowChangeHandler
                       GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
-                      KeyEvent c -> do msp ("key", c)
+                      KeyEvent 'q' -> writeChan eventChan QuitEvent
+                      KeyEvent c -> msp ("key", c)
         msp "looping"
         loop
   let catcher :: AsyncException -> IO ()
