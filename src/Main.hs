@@ -364,10 +364,6 @@ installHandlers chan = do
   origWindowChangeHandler <- installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
   return [origKeyboardHandler, origKeyboardHandler]
 
-installNumbries = mapM_ foo [0..64]
-  where foo i = installHandler i (Catch (bar i)) Nothing
-        bar i = msp ("Numbrie", i)
-
 inputReader chan = do
   c <- hGetChar stdin
   writeChan chan (KeyEvent c)
@@ -384,63 +380,12 @@ quit origKeyboardHandler origWindowChangeHandler = do
   msp "quitting2"
 
 main = do
-{-
-  hSetBuffering stdout NoBuffering
   hSetBuffering stdin NoBuffering
-  hSetEcho stdin False
-
-  let loop = do c <- hGetChar stdin
-                msp ("c", c)
-                loop
-  threadDelay 1000000
-  forkIO loop
-
-  -- Use bracket?
-  saveCursor
-  setCursorPosition 999 999
-  reportCursorPosition
-
-  threadDelay 100000000
-  let req = do threadDelay 500000
-               putStr "\ESC[6n"
-               hFlush stdout
-  forkIO req
-  b <- hWaitForInput stdin (-1)
-  msp b
-  threadDelay 100000000
-  --forkIO $ do c <- hGetChar stdin
-              --msp (show c)
-              --msp "hi"
-  let rt = do b <- hWaitForInput stdin (-1)
-              msp (show b)
-              msp "hi"
-  --forkIO rt
-  let loopp = do msp "loopp"
-                 threadDelay 500000
-                 loopp
-  --forkIO $ do loopp
-  threadDelay 1000000
-  msp "ok"
-  hFlush stdout
-  --j <- getTerminalSize
-  --msp j
-  threadDelay 100000000
--}
-
-  hSetBuffering stdin NoBuffering
-  -- This seems to require return after ^c, while BlockBuffering Nothing does
-  -- not
   hSetBuffering stdout NoBuffering
-  --hSetBuffering stdout (BlockBuffering Nothing)
+  msp "hi"
 
   eventChan <- newChan :: IO (Chan Event)
   [origKeyboardHandler, origWindowChangeHandler] <- installHandlers eventChan
-  msp "hi"
-  --installNumbries
-  let spew = do msp "asdf"
-                threadDelay 1000000
-                spew
-  --otherThreadId <- forkIO spew
   otherThreadId <- forkIO $ inputReader eventChan
   let loop = do
         msp "loop"
@@ -462,9 +407,5 @@ main = do
         exitSuccess
   catch loop catcher
   threadDelay $ 100 * 1000000
--- todo: updateTerminalSize is blocking the main thread, it should
--- be decoupled; and getTerminalSize is blocking on the input read
--- System.IO says without -threaded, reading will block all other
--- threads?
 -- Probably have to http://neilmitchell.blogspot.com/2015/05/handling-control-c-in-haskell.html
 -- In ghci, do this? https://stackoverflow.com/questions/46722102/how-to-be-certain-that-all-threads-have-been-killed-upon-pressing-ctrlc
