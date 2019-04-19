@@ -13,6 +13,7 @@ import qualified Data.ByteString.Char8 as C8
 import Data.ByteString.Builder (Builder, byteString)
 import qualified Data.ByteString.Builder as B
 import Data.Char (chr, ord)
+import qualified Data.Map as M
 import Data.Monoid
 import qualified Data.List as L
 import qualified Data.Text as T
@@ -299,6 +300,7 @@ handler = do
 data Event =
   KeyEvent Char |
   ResizeEvent |
+  GotWindowSizeEvent (Int, Int) |
   RedisplayEvent Char |
   QuitEvent
   deriving (Show)
@@ -348,7 +350,7 @@ updateTerminalSize eventChan = do
   saveCursor
   setCursorPosition 999 999
   reportCursorPosition
-  msp "updateTerminalSize done"
+  --msp "updateTerminalSize done"
 {-
   j <- getTerminalSize
   msp ("updateTerminalSize", j)
@@ -364,9 +366,49 @@ installHandlers chan = do
   origWindowChangeHandler <- installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
   return [origKeyboardHandler, origKeyboardHandler]
 
+data ParseState = Esc | LSQB | FirstDigit | SecondDigit | Success | Fail
+  deriving (Eq, Ord)
+type Recognizer = Char -> ParseState
+stateMachine :: M.Map ParseState Recognizer
+stateMachine = M.fromList
+  [ (Esc, \c -> if c == '\ESC' then LSQB else Fail)
+  , (LSQB, \c -> if c == '[' then FirstDigit else Fail)
+  , (FirstDigit, \c -> if c >= '0' && c <= '9' then FirstDigit else if c == ';' then SecondDigit else Fail)
+  , (SecondDigit, \c -> if c >= '0' && c <= '9' then SecondDigit else if c == 'R' then Success else Fail)
+  ]
+
+parseSizeReport :: IO (Bool, String)
+parseSizeReport = step Esc []
+  where step :: ParseState -> String -> IO (Bool, String)
+        step state sofar = do
+          c <- getChar
+          case (stateMachine M.! state) c of Success -> return (True, sofar ++ [c])
+                                             Fail -> return (False, sofar ++ [c])
+                                             next -> step next (sofar ++ [c])
+{-
+        seeEsc = \c -> if c == '\ESC' then seeLSQB else parseFailure
+        seeLSQB = \c -> if c == '[' then seeFirstDigit else parseFailure
+        seeFirstDigit = \c -> if c >= '0' && c <= '9' then seeFirstDigit else if c == ';' then seeSecondDigit else parseFailure
+        seeSecondDigit = \c -> if c >= '0' && c <= '9' then seeFirstDigit else if c == 'R' then success else parseFailure
+        parseFailure = \c -> undefined
+        success = \c -> undefined
+        step :: (Char -> 
+        step recognizer sofar = do
+          c <- getChar
+          msp ("c", c)
+          case recognizer c of success -> (True, sofar)
+                               parseFailure -> (False, sofar)
+                               next -> step next (sofar ++ [c])
+-}
+
+--readCharOrSizeReport :: IO (Either (w, h) [Char])
+
 inputReader chan = do
-  c <- hGetChar stdin
-  writeChan chan (KeyEvent c)
+  --c <- hGetChar stdin
+  p <- parseSizeReport
+  msp ("parse", p)
+  case p of (True, s) -> writeChan chan (GotWindowSizeEvent (3, 4))
+            (False, s) -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
   inputReader chan
 
 quit :: Handler -> Handler -> IO ()
@@ -396,6 +438,7 @@ main = do
                                       killThread otherThreadId
                                       msp ("killed", otherThreadId)
                                       quit origKeyboardHandler origWindowChangeHandler
+                      GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
                       KeyEvent c -> do msp ("key", c)
         msp "looping"
         loop
