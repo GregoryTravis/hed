@@ -1,7 +1,11 @@
-module SizeReport ( getCharsOrSizeReport ) where
+module SizeReport
+( getCharsOrSizeReport
+, updateTerminalSize
+) where
 
 import Data.Char (isDigit)
 import qualified Data.Map as M
+import System.Console.ANSI
 
 data ParseState = Esc | LSQB | FirstDigit | SecondDigit | Success | Fail
   deriving (Eq, Ord)
@@ -27,3 +31,8 @@ getCharsOrSizeReport = step Esc []
           case (stateMachine M.! state) c of Success -> return $ Left $ parseSizeReport (sofar ++ [c])
                                              Fail -> return $ Right $ sofar ++ [c]
                                              next -> step next (sofar ++ [c])
+
+updateTerminalSize = do
+  saveCursor
+  setCursorPosition 999 999
+  reportCursorPosition

@@ -6,7 +6,6 @@ import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Exception (finally, catch, bracket, AsyncException(..))
 import qualified Data.Map as M
-import System.Console.ANSI
 import System.Exit
 import System.IO
 import System.Posix.IO (fdRead, stdInput)
@@ -53,18 +52,6 @@ data Event =
 windowChangeHandler chan = do
   msp "windowChange handler"
   writeChan chan ResizeEvent
-  --j <- getTerminalSize
-  --msp ("size", j)
-
-updateTerminalSize eventChan = do
-  saveCursor
-  setCursorPosition 999 999
-  reportCursorPosition
-
--- Returns an uninstaller
-installHandlers chan = do
-  origWindowChangeHandler <- installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
-  return $ installHandler windowChange origWindowChangeHandler Nothing
 
 inputReader chan = do
   --c <- hGetChar stdin
@@ -87,7 +74,6 @@ withBackgroundThread backgroundIO io = bracket (forkIO backgroundIO) killThread'
 catchAndRestart io onerr = catch io catcher
   where catcher :: AsyncException -> IO ()
         catcher e = do
-          --msp "catcher"
           onerr
           catch io catcher
 
@@ -95,7 +81,7 @@ eventLoop eventChan = do
   let loop = do
         event <- readChan eventChan
         msp ("Loop event", event)
-        case event of ResizeEvent -> updateTerminalSize eventChan
+        case event of ResizeEvent -> updateTerminalSize
                       QuitEvent -> do 
                                       msp "exiting"
                                       exitSuccess
