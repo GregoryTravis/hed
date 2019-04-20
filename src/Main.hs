@@ -4,6 +4,7 @@ module Main where
 
 import Control.Concurrent.Chan
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Monad.State
 import System.Exit
 import System.IO
@@ -37,16 +38,6 @@ eventLoop eventChan = forever $ do
                 KeyEvent 'q' -> writeChan eventChan QuitEvent
                 KeyEvent c -> msp ("key", c)
 
-io :: IO a -> StateT t IO a
-io = liftIO
-
-stateMain :: t -> StateT t IO () -> IO ()
-stateMain initState main = runStateT main initState >> return ()
-
-newtype EditorState = EditorState { stack :: [Integer] }
-
-type ESAction a = StateT EditorState IO a
-
 pop :: ESAction Integer
 pop = do
   EditorState { stack = (x:xs) } <- get
@@ -75,9 +66,9 @@ main = stateMain initState $ do
     msp "Hed start"
 
   eventChan <- io $ (newChan :: IO (Chan Event))
-  io $ do
-    let wri = withRawInput 0 1
-        wbt = withBackgroundThread (inputReader eventChan)
-        wst = withWindowChangeHandler (writeChan eventChan ResizeEvent)
-        loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
-    wri . wbt . wst $ loop
+  --io $ do
+  let wri = withRawInput 0 1
+      wbt = withBackgroundThread (inputReader eventChan)
+      wst = withWindowChangeHandler (writeChan eventChan ResizeEvent)
+      loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
+  wri (io $ wbt . wst $ loop)
