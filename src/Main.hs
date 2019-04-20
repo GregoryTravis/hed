@@ -130,15 +130,14 @@ eventLoop eventChan = do
         loop
   loop
 
-main1 = do
+main = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
   msp "Hed start"
 
   eventChan <- newChan :: IO (Chan Event)
-  --withSignalHandler windowChange (Catch (windowChangeHandler eventChan)) $ withBackgroundThread (inputReader eventChan) $ do
-  (withBackgroundThread (inputReader eventChan)) .
-    (withSignalHandler windowChange (Catch (windowChangeHandler eventChan)))
-    $ catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
-
-main = withRawInput 0 1 main1
+  let wri = withRawInput 0 1
+      wbt = withBackgroundThread (inputReader eventChan)
+      wst = withSignalHandler windowChange (Catch (windowChangeHandler eventChan))
+      loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
+  wri . wbt . wst $ loop
