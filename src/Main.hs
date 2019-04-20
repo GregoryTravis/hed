@@ -37,7 +37,7 @@ eventLoop eventChan = forever $ do
                 KeyEvent 'q' -> writeChan eventChan QuitEvent
                 KeyEvent c -> msp ("key", c)
 
-main = do
+main' = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
   msp "Hed start"
@@ -50,13 +50,15 @@ main = do
   wri . wbt . wst $ loop
 
 --main :: IO ()
-main' = runStateT code [1..] >> return ()
+main = runStateT code [] >> return ()
 --
 -- layer an infinite list of uniques over the IO monad
 --
 
 code :: StateT [Integer] IO ()
 code = do
+    () <- push 10
+    () <- push 20
     x <- pop
     io $ print x
     y <- pop
@@ -71,6 +73,12 @@ pop = do
     (x:xs) <- get
     put xs
     return x
+
+push :: Integer -> StateT [Integer] IO ()
+push x = do
+  xs <- get
+  put (x:xs)
+  return ()
 
 io :: IO a -> StateT [Integer] IO a
 io = liftIO
