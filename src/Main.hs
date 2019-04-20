@@ -50,12 +50,14 @@ main' = do
   wri . wbt . wst $ loop
 
 --main :: IO ()
-main = runStateT code [] >> return ()
+main = runStateT code (EditorState { stack = [] }) >> return ()
 --
 -- layer an infinite list of uniques over the IO monad
 --
 
-code :: StateT [Integer] IO ()
+newtype EditorState = EditorState { stack :: [Integer] }
+
+code :: StateT EditorState IO ()
 code = do
     () <- push 10
     () <- push 20
@@ -68,17 +70,17 @@ code = do
 --
 -- pop the next unique off the stack
 --
-pop :: StateT [Integer] IO Integer
+pop :: StateT EditorState IO Integer
 pop = do
-    (x:xs) <- get
-    put xs
+    EditorState { stack = (x:xs) } <- get
+    put EditorState { stack = (xs) }
     return x
 
-push :: Integer -> StateT [Integer] IO ()
+push :: Integer -> StateT EditorState IO ()
 push x = do
-  xs <- get
-  put (x:xs)
+  EditorState { stack = (xs) } <- get
+  put EditorState { stack = (x:xs) }
   return ()
 
-io :: IO a -> StateT [Integer] IO a
+io :: IO a -> StateT EditorState IO a
 io = liftIO
