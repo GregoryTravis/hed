@@ -116,6 +116,20 @@ catchAndRestart io onerr = catch io catcher
           onerr
           catch io catcher
 
+eventLoop eventChan = do
+  let loop = do
+        event <- readChan eventChan
+        msp ("Loop event", event)
+        case event of ResizeEvent -> updateTerminalSize eventChan
+                      QuitEvent -> do 
+                                      msp "exiting"
+                                      exitSuccess
+                      GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
+                      KeyEvent 'q' -> writeChan eventChan QuitEvent
+                      KeyEvent c -> msp ("key", c)
+        loop
+  loop
+
 main1 = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
@@ -125,18 +139,6 @@ main1 = do
   --withSignalHandler windowChange (Catch (windowChangeHandler eventChan)) $ withBackgroundThread (inputReader eventChan) $ do
   (withBackgroundThread (inputReader eventChan)) .
     (withSignalHandler windowChange (Catch (windowChangeHandler eventChan)))
-    $ do
-      let loop = do
-            event <- readChan eventChan
-            msp ("Loop event", event)
-            case event of ResizeEvent -> updateTerminalSize eventChan
-                          QuitEvent -> do 
-                                          msp "exiting"
-                                          exitSuccess
-                          GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
-                          KeyEvent 'q' -> writeChan eventChan QuitEvent
-                          KeyEvent c -> msp ("key", c)
-            loop
-      catchAndRestart loop (writeChan eventChan QuitEvent)
+    $ catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
 
 main = withRawInput 0 1 main1
