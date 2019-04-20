@@ -57,13 +57,15 @@ stateMain initState main = runStateT main initState >> return ()
 
 newtype EditorState = EditorState { stack :: [Integer] }
 
-pop :: StateT EditorState IO Integer
+type ESAction a = StateT EditorState IO a
+
+pop :: ESAction Integer
 pop = do
   EditorState { stack = (x:xs) } <- get
   put EditorState { stack = (xs) }
   return x
 
-push :: Integer -> StateT EditorState IO ()
+push :: Integer -> ESAction ()
 push x = do
   EditorState { stack = (xs) } <- get
   put EditorState { stack = (x:xs) }
