@@ -5,7 +5,6 @@ module Main where
 import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Exception (finally, catch, bracket, AsyncException(..))
-import Data.Char (isDigit)
 import qualified Data.Map as M
 import System.Console.ANSI
 import System.Exit
@@ -15,6 +14,7 @@ import System.Posix.Signals
 import System.Posix.Signals.Exts
 import System.Posix.Terminal
 
+import SizeReport
 import Util
 
 -- Taken from https://stackoverflow.com/questions/23068218/haskell-read-raw-keyboard-input/36297897#36297897
@@ -66,34 +66,9 @@ installHandlers chan = do
   origWindowChangeHandler <- installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
   return $ installHandler windowChange origWindowChangeHandler Nothing
 
-data ParseState = Esc | LSQB | FirstDigit | SecondDigit | Success | Fail
-  deriving (Eq, Ord)
-type Recognizer = Char -> ParseState
-stateMachine :: M.Map ParseState Recognizer
-stateMachine = M.fromList
-  [ (Esc, \c -> if c == '\ESC' then LSQB else Fail)
-  , (LSQB, \c -> if c == '[' then FirstDigit else Fail)
-  , (FirstDigit, \c -> if c >= '0' && c <= '9' then FirstDigit else if c == ';' then SecondDigit else Fail)
-  , (SecondDigit, \c -> if c >= '0' && c <= '9' then SecondDigit else if c == 'R' then Success else Fail)
-  ]
-
-recognizeSizeReport :: IO (Either (Int, Int) String)
-recognizeSizeReport = step Esc []
-  where step :: ParseState -> String -> IO (Either (Int, Int) String)
-        step state sofar = do
-          c <- getChar
-          case (stateMachine M.! state) c of Success -> return $ Left $ parseSizeReport (sofar ++ [c])
-                                             Fail -> return $ Right $ sofar ++ [c]
-                                             next -> step next (sofar ++ [c])
-
-parseSizeReport :: String -> (Int, Int)
-parseSizeReport s = (read first, read second)
-  where first = takeWhile isDigit $ drop 2 s
-        second = takeWhile isDigit $ drop 1 $ dropWhile isDigit $ drop 2 s
-
 inputReader chan = do
   --c <- hGetChar stdin
-  p <- recognizeSizeReport
+  p <- getCharsOrSizeReport
   msp ("parse", p)
   case p of Left dim -> writeChan chan (GotWindowSizeEvent dim)
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
