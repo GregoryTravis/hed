@@ -18,12 +18,7 @@ data Event =
   QuitEvent
   deriving (Show)
   
-windowChangeHandler chan = do
-  msp "windowChange handler"
-  writeChan chan ResizeEvent
-
 inputReader chan = do
-  --c <- hGetChar stdin
   p <- getCharsOrSizeReport
   msp ("parse", p)
   case p of Left dim -> writeChan chan (GotWindowSizeEvent dim)
@@ -52,6 +47,6 @@ main = do
   eventChan <- newChan :: IO (Chan Event)
   let wri = withRawInput 0 1
       wbt = withBackgroundThread (inputReader eventChan)
-      wst = withWindowChangeHandler (windowChangeHandler eventChan)
+      wst = withWindowChangeHandler (writeChan eventChan ResizeEvent)
       loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
   wri . wbt . wst $ loop
