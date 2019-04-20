@@ -4,27 +4,9 @@ module Main where
 
 import Control.Concurrent
 import Control.Concurrent.Chan
-import Control.Exception (finally, catch, IOException, AsyncException(..))
-import Control.Monad.State
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BSL
-import qualified Data.ByteString.Char8 as C8
-import Data.ByteString.Builder (Builder, byteString)
-import qualified Data.ByteString.Builder as B
-import Data.Char (chr, ord, isDigit)
+import Control.Exception (finally, catch,              AsyncException(..))
+import Data.Char (          isDigit)
 import qualified Data.Map as M
-import Data.Monoid
-import qualified Data.List as L
-import qualified Data.Text as T
-import qualified Data.Text.IO as IO
-import Data.Text (Text, pack, unpack)
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Builder as TB
-import Data.Vector (Vector, (!))
-import Data.Vector (Vector, (!))
-import qualified Data.Vector as V
-import Linear
 import System.Console.ANSI
 import System.Exit
 import System.IO
@@ -33,9 +15,6 @@ import System.Posix.Signals
 import System.Posix.Signals.Exts
 import System.Posix.Terminal
 
-import Document
-import FrameBuffer
-import RectSampler
 import Util
 
 -- Taken from https://stackoverflow.com/questions/23068218/haskell-read-raw-keyboard-input/36297897#36297897
