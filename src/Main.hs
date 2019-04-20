@@ -3,6 +3,7 @@
 module Main where
 
 import Control.Concurrent.Chan
+import Control.Monad
 import System.Exit
 import System.IO
 
@@ -18,26 +19,22 @@ data Event =
   QuitEvent
   deriving (Show)
   
-inputReader chan = do
+inputReader chan = forever $ do
   p <- getCharsOrSizeReport
   msp ("parse", p)
   case p of Left dim -> writeChan chan (GotWindowSizeEvent dim)
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
-  inputReader chan
 
-eventLoop eventChan = do
-  let loop = do
-        event <- readChan eventChan
-        msp ("Loop event", event)
-        case event of ResizeEvent -> updateTerminalSize
-                      QuitEvent -> do 
-                                      msp "exiting"
-                                      exitSuccess
-                      GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
-                      KeyEvent 'q' -> writeChan eventChan QuitEvent
-                      KeyEvent c -> msp ("key", c)
-        loop
-  loop
+eventLoop eventChan = forever $ do
+  event <- readChan eventChan
+  msp ("Loop event", event)
+  case event of ResizeEvent -> updateTerminalSize
+                QuitEvent -> do 
+                                msp "exiting"
+                                exitSuccess
+                GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
+                KeyEvent 'q' -> writeChan eventChan QuitEvent
+                KeyEvent c -> msp ("key", c)
 
 main = do
   hSetBuffering stdin NoBuffering
