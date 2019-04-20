@@ -49,32 +49,13 @@ main' = do
       loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
   wri . wbt . wst $ loop
 
---main :: IO ()
-main = runStateT code (EditorState { stack = [] }) >> return ()
---
--- layer an infinite list of uniques over the IO monad
---
-
 newtype EditorState = EditorState { stack :: [Integer] }
 
-code :: StateT EditorState IO ()
-code = do
-    () <- push 10
-    () <- push 20
-    x <- pop
-    io $ print x
-    y <- pop
-    io $ print y
-    return ()
-
---
--- pop the next unique off the stack
---
 pop :: StateT EditorState IO Integer
 pop = do
-    EditorState { stack = (x:xs) } <- get
-    put EditorState { stack = (xs) }
-    return x
+  EditorState { stack = (x:xs) } <- get
+  put EditorState { stack = (xs) }
+  return x
 
 push :: Integer -> StateT EditorState IO ()
 push x = do
@@ -84,3 +65,15 @@ push x = do
 
 io :: IO a -> StateT EditorState IO a
 io = liftIO
+
+stateMain :: StateT EditorState IO () -> IO ()
+stateMain main = runStateT main (EditorState { stack = [] }) >> return ()
+
+main = stateMain $ do
+  () <- push 10
+  () <- push 20
+  x <- pop
+  io $ print x
+  y <- pop
+  io $ print y
+  return ()
