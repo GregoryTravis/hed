@@ -77,13 +77,13 @@ stateMachine = M.fromList
   , (SecondDigit, \c -> if c >= '0' && c <= '9' then SecondDigit else if c == 'R' then Success else Fail)
   ]
 
-recognizeSizeReport :: IO (Bool, String)
+recognizeSizeReport :: IO (Either (Int, Int) String)
 recognizeSizeReport = step Esc []
-  where step :: ParseState -> String -> IO (Bool, String)
+  where step :: ParseState -> String -> IO (Either (Int, Int) String)
         step state sofar = do
           c <- getChar
-          case (stateMachine M.! state) c of Success -> return (True, sofar ++ [c])
-                                             Fail -> return (False, sofar ++ [c])
+          case (stateMachine M.! state) c of Success -> return $ Left $ parseSizeReport (sofar ++ [c])
+                                             Fail -> return $ Right $ sofar ++ [c]
                                              next -> step next (sofar ++ [c])
 
 parseSizeReport :: String -> (Int, Int)
@@ -95,8 +95,8 @@ inputReader chan = do
   --c <- hGetChar stdin
   p <- recognizeSizeReport
   msp ("parse", p)
-  case p of (True, s) -> writeChan chan (GotWindowSizeEvent (parseSizeReport s))
-            (False, s) -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
+  case p of Left dim -> writeChan chan (GotWindowSizeEvent dim)
+            Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
   inputReader chan
 
 withSignalHandler :: Signal -> Handler -> IO a -> IO a
