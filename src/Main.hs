@@ -37,18 +37,6 @@ eventLoop eventChan = forever $ do
                 KeyEvent 'q' -> writeChan eventChan QuitEvent
                 KeyEvent c -> msp ("key", c)
 
-main' = do
-  hSetBuffering stdin NoBuffering
-  hSetBuffering stdout NoBuffering
-  msp "Hed start"
-
-  eventChan <- newChan :: IO (Chan Event)
-  let wri = withRawInput 0 1
-      wbt = withBackgroundThread (inputReader eventChan)
-      wst = withWindowChangeHandler (writeChan eventChan ResizeEvent)
-      loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
-  wri . wbt . wst $ loop
-
 io :: IO a -> StateT t IO a
 io = liftIO
 
@@ -81,4 +69,15 @@ main = stateMain initState $ do
   io $ print x
   y <- pop
   io $ print y
-  return ()
+  io $ do
+    hSetBuffering stdin NoBuffering
+    hSetBuffering stdout NoBuffering
+    msp "Hed start"
+
+  io $ do
+    eventChan <- newChan :: IO (Chan Event)
+    let wri = withRawInput 0 1
+        wbt = withBackgroundThread (inputReader eventChan)
+        wst = withWindowChangeHandler (writeChan eventChan ResizeEvent)
+        loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
+    wri . wbt . wst $ loop
