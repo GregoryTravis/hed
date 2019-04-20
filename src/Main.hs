@@ -4,8 +4,8 @@ module Main where
 
 import Control.Concurrent
 import Control.Concurrent.Chan
-import Control.Exception (finally, catch,              AsyncException(..))
-import Data.Char (          isDigit)
+import Control.Exception (finally, catch, bracket, AsyncException(..))
+import Data.Char (isDigit)
 import qualified Data.Map as M
 import System.Console.ANSI
 import System.Exit
@@ -100,10 +100,10 @@ inputReader chan = do
             (False, s) -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
   inputReader chan
 
-quit :: IO ()
-quit = do
-  msp "exiting"
-  exitSuccess
+withSignalHandler :: Signal -> Handler -> IO a -> IO a
+withSignalHandler signal handler io = bracket install uninstall (\_ -> io)
+  where install = installHandler signal handler Nothing
+        uninstall originalHandler = installHandler signal originalHandler Nothing
 
 main1 = do
   hSetBuffering stdin NoBuffering
@@ -111,25 +111,25 @@ main1 = do
   msp "Hed start"
 
   eventChan <- newChan :: IO (Chan Event)
-  uninstaller <- installHandlers eventChan
-  otherThreadId <- forkIO $ inputReader eventChan
-  let loop = do
-        event <- readChan eventChan
-        msp ("Loop event", event)
-        case event of ResizeEvent -> updateTerminalSize eventChan
-                      QuitEvent -> do 
-                                      killThread otherThreadId
-                                      uninstaller
-                                      quit
-                      GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
-                      KeyEvent 'q' -> writeChan eventChan QuitEvent
-                      KeyEvent c -> msp ("key", c)
-        loop
-  let catcher :: AsyncException -> IO ()
-      catcher e = do
-        --msp "catcher"
-        writeChan eventChan QuitEvent
-        catch loop catcher
-  catch loop catcher
+  withSignalHandler windowChange (Catch (windowChangeHandler eventChan)) $ do
+    otherThreadId <- forkIO $ inputReader eventChan
+    let loop = do
+          event <- readChan eventChan
+          msp ("Loop event", event)
+          case event of ResizeEvent -> updateTerminalSize eventChan
+                        QuitEvent -> do 
+                                        killThread otherThreadId
+                                        msp "exiting"
+                                        exitSuccess
+                        GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
+                        KeyEvent 'q' -> writeChan eventChan QuitEvent
+                        KeyEvent c -> msp ("key", c)
+          loop
+    let catcher :: AsyncException -> IO ()
+        catcher e = do
+          --msp "catcher"
+          writeChan eventChan QuitEvent
+          catch loop catcher
+    catch loop catcher
 
 main = withRawInput 0 1 main1
