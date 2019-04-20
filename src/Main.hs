@@ -49,6 +49,12 @@ main' = do
       loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
   wri . wbt . wst $ loop
 
+io :: IO a -> StateT t IO a
+io = liftIO
+
+stateMain :: t -> StateT t IO () -> IO ()
+stateMain initState main = runStateT main initState >> return ()
+
 newtype EditorState = EditorState { stack :: [Integer] }
 
 pop :: StateT EditorState IO Integer
@@ -63,13 +69,10 @@ push x = do
   put EditorState { stack = (x:xs) }
   return ()
 
-io :: IO a -> StateT EditorState IO a
-io = liftIO
+initState = EditorState { stack = [] }
 
-stateMain :: StateT EditorState IO () -> IO ()
-stateMain main = runStateT main (EditorState { stack = [] }) >> return ()
-
-main = stateMain $ do
+main :: IO ()
+main = stateMain initState $ do
   () <- push 10
   () <- push 20
   x <- pop
