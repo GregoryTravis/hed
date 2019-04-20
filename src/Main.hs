@@ -74,8 +74,8 @@ main = stateMain initState $ do
     hSetBuffering stdout NoBuffering
     msp "Hed start"
 
+  eventChan <- io $ (newChan :: IO (Chan Event))
   io $ do
-    eventChan <- newChan :: IO (Chan Event)
     let wri = withRawInput 0 1
         wbt = withBackgroundThread (inputReader eventChan)
         wst = withWindowChangeHandler (writeChan eventChan ResizeEvent)
