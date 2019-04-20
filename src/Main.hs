@@ -113,8 +113,10 @@ main1 = do
   msp "Hed start"
 
   eventChan <- newChan :: IO (Chan Event)
-  withSignalHandler windowChange (Catch (windowChangeHandler eventChan)) $ do
-    withBackgroundThread (inputReader eventChan) $ do
+  --withSignalHandler windowChange (Catch (windowChangeHandler eventChan)) $ withBackgroundThread (inputReader eventChan) $ do
+  (withBackgroundThread (inputReader eventChan)) .
+    (withSignalHandler windowChange (Catch (windowChangeHandler eventChan)))
+    $ do
       let loop = do
             event <- readChan eventChan
             msp ("Loop event", event)
