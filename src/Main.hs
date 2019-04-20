@@ -105,6 +105,8 @@ withSignalHandler signal handler io = bracket install uninstall (\_ -> io)
   where install = installHandler signal handler Nothing
         uninstall originalHandler = installHandler signal originalHandler Nothing
 
+withBackgroundThread backgroundIO io = bracket (forkIO backgroundIO) killThread (\_ -> io)
+
 main1 = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
@@ -112,24 +114,23 @@ main1 = do
 
   eventChan <- newChan :: IO (Chan Event)
   withSignalHandler windowChange (Catch (windowChangeHandler eventChan)) $ do
-    otherThreadId <- forkIO $ inputReader eventChan
-    let loop = do
-          event <- readChan eventChan
-          msp ("Loop event", event)
-          case event of ResizeEvent -> updateTerminalSize eventChan
-                        QuitEvent -> do 
-                                        killThread otherThreadId
-                                        msp "exiting"
-                                        exitSuccess
-                        GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
-                        KeyEvent 'q' -> writeChan eventChan QuitEvent
-                        KeyEvent c -> msp ("key", c)
-          loop
-    let catcher :: AsyncException -> IO ()
-        catcher e = do
-          --msp "catcher"
-          writeChan eventChan QuitEvent
-          catch loop catcher
-    catch loop catcher
+    withBackgroundThread (inputReader eventChan) $ do
+      let loop = do
+            event <- readChan eventChan
+            msp ("Loop event", event)
+            case event of ResizeEvent -> updateTerminalSize eventChan
+                          QuitEvent -> do 
+                                          msp "exiting"
+                                          exitSuccess
+                          GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
+                          KeyEvent 'q' -> writeChan eventChan QuitEvent
+                          KeyEvent c -> msp ("key", c)
+            loop
+      let catcher :: AsyncException -> IO ()
+          catcher e = do
+            --msp "catcher"
+            writeChan eventChan QuitEvent
+            catch loop catcher
+      catch loop catcher
 
 main = withRawInput 0 1 main1
