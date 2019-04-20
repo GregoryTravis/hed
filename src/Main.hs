@@ -62,9 +62,10 @@ updateTerminalSize eventChan = do
   setCursorPosition 999 999
   reportCursorPosition
 
+-- Returns an uninstaller
 installHandlers chan = do
   origWindowChangeHandler <- installHandler windowChange (Catch (windowChangeHandler chan)) Nothing
-  return origWindowChangeHandler
+  return $ installHandler windowChange origWindowChangeHandler Nothing
 
 data ParseState = Esc | LSQB | FirstDigit | SecondDigit | Success | Fail
   deriving (Eq, Ord)
@@ -99,10 +100,9 @@ inputReader chan = do
             (False, s) -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
   inputReader chan
 
-quit :: Handler -> IO ()
-quit origWindowChangeHandler = do
+quit :: IO ()
+quit = do
   msp "exiting"
-  installHandler windowChange origWindowChangeHandler Nothing
   exitSuccess
 
 main1 = do
@@ -111,7 +111,7 @@ main1 = do
   msp "Hed start"
 
   eventChan <- newChan :: IO (Chan Event)
-  origWindowChangeHandler <- installHandlers eventChan
+  uninstaller <- installHandlers eventChan
   otherThreadId <- forkIO $ inputReader eventChan
   let loop = do
         event <- readChan eventChan
@@ -119,7 +119,8 @@ main1 = do
         case event of ResizeEvent -> updateTerminalSize eventChan
                       QuitEvent -> do 
                                       killThread otherThreadId
-                                      quit origWindowChangeHandler
+                                      uninstaller
+                                      quit
                       GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
                       KeyEvent 'q' -> writeChan eventChan QuitEvent
                       KeyEvent c -> msp ("key", c)
