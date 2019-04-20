@@ -139,7 +139,7 @@ vvhandler :: MVar Int -> IO ()
 vvhandler s_interrupted = do putStrLn "HI"
                              modifyMVar_ s_interrupted (return . (+1))
 
-main = do
+main1 = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
   msp "Hed start"
@@ -171,6 +171,8 @@ main = do
         writeChan eventChan QuitEvent
         catch loop catcher
   catch loop catcher
+
+main = withRawInput 0 1 main1
 
 -- It actually might have been the build/exec wrapper in g
 -- Probably have to http://neilmitchell.blogspot.com/2015/05/handling-control-c-in-haskell.html
