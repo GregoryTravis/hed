@@ -40,7 +40,6 @@ withRawInput vmin vtime application = do
    -}
   application 
     `finally` do setTerminalAttributes stdInput oldTermSettings Immediately
-                 msp "ASDFASDF"
                  return ()
 
 data Event =
@@ -103,9 +102,19 @@ inputReader chan = do
 withSignalHandler :: Signal -> Handler -> IO a -> IO a
 withSignalHandler signal handler io = bracket install uninstall (\_ -> io)
   where install = installHandler signal handler Nothing
-        uninstall originalHandler = installHandler signal originalHandler Nothing
+        uninstall originalHandler = do msp "uninstall"
+                                       installHandler signal originalHandler Nothing
 
-withBackgroundThread backgroundIO io = bracket (forkIO backgroundIO) killThread (\_ -> io)
+withBackgroundThread backgroundIO io = bracket (forkIO backgroundIO) killThread' (\_ -> io)
+  where killThread' tid = do msp "killThread"
+                             killThread tid
+
+catchAndRestart io onerr = catch io catcher
+  where catcher :: AsyncException -> IO ()
+        catcher e = do
+          --msp "catcher"
+          onerr
+          catch io catcher
 
 main1 = do
   hSetBuffering stdin NoBuffering
@@ -128,11 +137,6 @@ main1 = do
                           KeyEvent 'q' -> writeChan eventChan QuitEvent
                           KeyEvent c -> msp ("key", c)
             loop
-      let catcher :: AsyncException -> IO ()
-          catcher e = do
-            --msp "catcher"
-            writeChan eventChan QuitEvent
-            catch loop catcher
-      catch loop catcher
+      catchAndRestart loop (writeChan eventChan QuitEvent)
 
 main = withRawInput 0 1 main1
