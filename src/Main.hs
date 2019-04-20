@@ -57,14 +57,7 @@ windowChangeHandler chan = do
   --j <- getTerminalSize
   --msp ("size", j)
 
-{-
-sendFakeResizeEvent chan = do
-  msp "send fake"
-  writeChan chan ResizeEvent
--}
-
 updateTerminalSize eventChan = do
-  --msp "updateTerminalSize"
   saveCursor
   setCursorPosition 999 999
   reportCursorPosition
@@ -111,12 +104,6 @@ quit origWindowChangeHandler = do
   msp "exiting"
   installHandler windowChange origWindowChangeHandler Nothing
   exitSuccess
-
-
-
-vvhandler :: MVar Int -> IO ()
-vvhandler s_interrupted = do putStrLn "HI"
-                             modifyMVar_ s_interrupted (return . (+1))
 
 main1 = do
   hSetBuffering stdin NoBuffering
