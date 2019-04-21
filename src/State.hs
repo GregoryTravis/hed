@@ -18,7 +18,7 @@ data EditorState = EditorState
   deriving (Eq, Show)
 
 initEditorState = EditorState
-  { buffers = M.fromList [("scratch", Buffer 'a')]
+  { buffers = M.fromList [("scratch", Buffer 'a'), ("hey", Buffer 'q')]
   , currentBuffer = "scratch"
   , screenDim = Nothing
   }
