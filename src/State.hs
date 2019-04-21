@@ -9,10 +9,10 @@ import Control.Monad.State
 
 import Buffer
 
-data EditorState = EditorState { thing :: Thing, screenDim :: Maybe (Int, Int) }
+data EditorState = EditorState { buffer :: Buffer, screenDim :: Maybe (Int, Int) }
   deriving (Eq, Show)
 
-initEditorState = EditorState { thing = Thing 'a', screenDim = Nothing }
+initEditorState = EditorState { buffer = Buffer 'a', screenDim = Nothing }
 
 type ESAction a = StateT EditorState IO a
 

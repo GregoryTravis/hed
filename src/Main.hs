@@ -24,7 +24,7 @@ inputReader chan = forever $ do
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
 
 transformEditorState :: EditorState -> Event -> EditorState
-transformEditorState es (KeyEvent c) = es { thing = Thing c }
+transformEditorState es (KeyEvent c) = es { buffer = Buffer c }
 transformEditorState es (GotWindowSizeEvent dim) = es { screenDim = Just dim }
 
 updateEditorState :: Chan Event -> Event -> ESAction ()

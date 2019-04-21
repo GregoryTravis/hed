@@ -1,13 +1,13 @@
 module Buffer
-( Thing(..)
-, renderThing
+( Buffer(..)
+, renderBuffer
 ) where
 
-data Thing = Thing Char
+data Buffer = Buffer Char
   deriving (Eq, Show)
 
-renderThing :: Thing -> (Int, Int) -> String
-renderThing (Thing c) (w, h) = blank <> mconcat lines <> blank
+renderBuffer :: Buffer -> (Int, Int) -> String
+renderBuffer (Buffer c) (w, h) = blank <> mconcat lines <> blank
   where blank = take w (repeat ' ')
         lines = take (h-2) (repeat line)
         line = " " <> (take (w-2) (repeat c)) <> " "
