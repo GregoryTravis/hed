@@ -13,6 +13,7 @@ import Control
 import Display
 import Event
 import SizeReport
+import State
 import Thing
 import Util
 
@@ -24,6 +25,7 @@ inputReader chan = forever $ do
 
 transformEditorState :: EditorState -> Event -> EditorState
 transformEditorState es (KeyEvent c) = es { thing = Thing c }
+transformEditorState es (GotWindowSizeEvent dim) = es { screenDim = Just dim }
 
 updateEditorState :: Chan Event -> Event -> ESAction ()
 updateEditorState chan event = do
@@ -40,16 +42,15 @@ eventLoop eventChan = forever $ do
   case event of ResizeEvent -> io updateTerminalSize
                 QuitEvent -> io $ do msp "exiting"
                                      exitSuccess
-                GotWindowSizeEvent (w, h) -> io $ msp ("WSE", w, h)
+                --GotWindowSizeEvent (w, h) -> io $ msp ("WSE", w, h)
+                e@(GotWindowSizeEvent (w, h)) -> updateEditorState eventChan e
                 KeyEvent 'q' -> io $ writeChan eventChan QuitEvent
                 --KeyEvent c -> io $ msp ("key", c)
                 KeyEvent c -> updateEditorState eventChan (KeyEvent c)
                 StateChangedEvent -> redisplay
 
-initState = EditorState { thing = Thing 'a' }
-
 main :: IO ()
-main = stateMain initState $ do
+main = stateMain initEditorState $ do
   io $ do
     hSetBuffering stdin NoBuffering
     hSetBuffering stdout NoBuffering
@@ -61,5 +62,6 @@ main = stateMain initState $ do
       wbt = withBackgroundThread (inputReader eventChan)
       wct = withWindowChangeHandler (writeChan eventChan ResizeEvent)
       loop = eventLoop eventChan
-  io $ writeChan eventChan StateChangedEvent
+  --io $ writeChan eventChan StateChangedEvent
+  io $ writeChan eventChan ResizeEvent
   (wri . wct . wbt) loop

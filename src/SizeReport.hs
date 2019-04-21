@@ -19,7 +19,7 @@ stateMachine = M.fromList
   ]
 
 parseSizeReport :: String -> (Int, Int)
-parseSizeReport s = (read first, read second)
+parseSizeReport s = (read second, read first) -- It's (h, w) of course
   where first = takeWhile isDigit $ drop 2 s
         second = takeWhile isDigit $ drop 1 $ dropWhile isDigit $ drop 2 s
 
