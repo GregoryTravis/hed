@@ -18,14 +18,8 @@ import System.Posix.Signals
 import System.Posix.Signals.Exts
 import System.Posix.Terminal
 
+import State
 import Util
-
-newtype EditorState = EditorState { stack :: [Integer] }
-
-type ESAction a = StateT EditorState IO a
-
-io :: IO a -> StateT t IO a
-io = liftIO
 
 stateMain :: t -> StateT t IO () -> IO ()
 stateMain initState main = runStateT main initState >> return ()

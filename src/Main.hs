@@ -10,17 +10,10 @@ import System.Exit
 import System.IO
 
 import Control
+import Event
 import SizeReport
 import Util
 
-data Event =
-  KeyEvent Char |
-  ResizeEvent |
-  GotWindowSizeEvent (Int, Int) |
-  RedisplayEvent Char |
-  QuitEvent
-  deriving (Show)
-  
 inputReader chan = forever $ do
   p <- getCharsOrSizeReport
   msp ("parse", p)
