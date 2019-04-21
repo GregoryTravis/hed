@@ -6,13 +6,22 @@ module State
 ) where
 
 import Control.Monad.State
+import qualified Data.Map as M
 
 import Buffer
 
-data EditorState = EditorState { buffer :: Buffer, screenDim :: Maybe (Int, Int) }
+data EditorState = EditorState
+  { buffers :: M.Map String Buffer
+  , currentBuffer :: String
+  , screenDim :: Maybe (Int, Int)
+  }
   deriving (Eq, Show)
 
-initEditorState = EditorState { buffer = Buffer 'a', screenDim = Nothing }
+initEditorState = EditorState
+  { buffers = M.fromList [("scratch", Buffer 'a')]
+  , currentBuffer = "scratch"
+  , screenDim = Nothing
+  }
 
 type ESAction a = StateT EditorState IO a
 

@@ -3,6 +3,7 @@ module Display
 ) where
 
 import Control.Monad.State
+import qualified Data.Map as M
 import System.Console.ANSI
 import System.IO
 
@@ -15,7 +16,7 @@ import Util
 redisplay :: ESAction ()
 redisplay = do
   s <- get
-  let t = buffer s
+  let t = buffers s M.! currentBuffer s
   io $ do
     clearScreen
     setCursorPosition 0 0

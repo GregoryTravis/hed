@@ -6,6 +6,7 @@ import Control.Concurrent.Chan
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.State
+import qualified Data.Map as M
 import System.Exit
 import System.IO
 
@@ -24,7 +25,8 @@ inputReader chan = forever $ do
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
 
 transformEditorState :: EditorState -> Event -> EditorState
-transformEditorState es (KeyEvent c) = es { buffer = Buffer c }
+transformEditorState es (KeyEvent c) = es { buffers = updated }
+  where updated = M.insert (currentBuffer es) (Buffer c) (buffers es)
 transformEditorState es (GotWindowSizeEvent dim) = es { screenDim = Just dim }
 
 updateEditorState :: Chan Event -> Event -> ESAction ()
