@@ -27,16 +27,16 @@ inputReader chan = forever $ do
   case p of Left dim -> writeChan chan (GotWindowSizeEvent dim)
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
 
+eventLoop :: Chan Event -> ESAction a
 eventLoop eventChan = forever $ do
-  event <- readChan eventChan
-  msp ("Loop event", event)
-  case event of ResizeEvent -> updateTerminalSize
-                QuitEvent -> do 
-                                msp "exiting"
-                                exitSuccess
-                GotWindowSizeEvent (w, h) -> msp ("WSE", w, h)
-                KeyEvent 'q' -> writeChan eventChan QuitEvent
-                KeyEvent c -> msp ("key", c)
+  event <- io $ readChan eventChan
+  io $ msp ("Loop event", event)
+  case event of ResizeEvent -> io updateTerminalSize
+                QuitEvent -> io $ do msp "exiting"
+                                     exitSuccess
+                GotWindowSizeEvent (w, h) -> io $ msp ("WSE", w, h)
+                KeyEvent 'q' -> io $ writeChan eventChan QuitEvent
+                KeyEvent c -> io $ msp ("key", c)
 
 pop :: ESAction Integer
 pop = do
@@ -70,6 +70,5 @@ main = stateMain initState $ do
   let wri = withRawInput 0 1
       wbt = withBackgroundThread (inputReader eventChan)
       wct = withWindowChangeHandler (writeChan eventChan ResizeEvent)
-      --loop = catchAndRestart (eventLoop eventChan) exitSuccess
       loop = eventLoop eventChan
-  (wri . wct . wbt) (io $ loop)
+  (wri . wct . wbt) loop
