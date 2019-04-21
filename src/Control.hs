@@ -5,6 +5,7 @@ module Control
 , withBackgroundThread
 , withRawInput
 , withWindowChangeHandler
+, withStdoutBuffering
 , EditorState(..)
 , ESAction
 ) where
@@ -13,6 +14,7 @@ import Control.Concurrent
 import Control.Exception (finally, catch, bracket, AsyncException(..))
 import Control.Monad.IO.Class
 import Control.Monad.State
+import System.IO
 import System.Posix.IO (stdInput)
 import System.Posix.Signals
 import System.Posix.Signals.Exts
@@ -82,3 +84,11 @@ withRawInput vmin vtime application = do
   io $ (runStateT application s >>= (\(a, s) -> return a))
          `finally` do setTerminalAttributes stdInput oldTermSettings Immediately
                       return ()
+
+withStdoutBuffering :: BufferMode -> IO a -> IO a
+withStdoutBuffering mode action = do
+  oldMode <- hGetBuffering stdout
+  hSetBuffering stdout mode
+  a <- action
+  hSetBuffering stdout oldMode
+  return a

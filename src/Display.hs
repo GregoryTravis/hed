@@ -4,7 +4,9 @@ module Display
 
 import Control.Monad.State
 import System.Console.ANSI
+import System.IO
 
+import Control
 import State
 import Thing
 import Util
@@ -17,5 +19,9 @@ redisplay = do
     --clearScreen
     setCursorPosition 0 0
     case screenDim s of Nothing -> msp "Can't determine screen dimensions"
-                        Just dim -> do putStr $ renderThing t dim
-                                     --msp s
+                        Just dim -> withStdoutBuffering (BlockBuffering Nothing) $ do 
+                                      setCursorPosition 0 0
+                                      putStr $ renderThing t dim
+                                      setCursorPosition 0 0
+                                      hFlush stdout
+                                    --msp s
