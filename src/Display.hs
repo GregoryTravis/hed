@@ -16,12 +16,14 @@ redisplay = do
   s <- get
   let t = thing s
   io $ do
-    --clearScreen
+    clearScreen
     setCursorPosition 0 0
     case screenDim s of Nothing -> msp "Can't determine screen dimensions"
                         Just dim -> withStdoutBuffering (BlockBuffering Nothing) $ do 
                                       setCursorPosition 0 0
-                                      putStr $ renderThing t dim
+                                      putStr $ checkSize (renderThing t dim) dim
+                                      --putStrLn $ show $ length $ checkSize (renderThing t dim) dim
+                                      --msp s
                                       setCursorPosition 0 0
                                       hFlush stdout
-                                    --msp s
+  where checkSize s (w, h) = assertM "dim" (length s == w*h) s
