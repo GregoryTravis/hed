@@ -17,9 +17,9 @@ renderLayout (VStack top bottom) (w, h) = vConcat topR bottomR
 renderLayout (HStack left right) (w, h) = hConcat leftR rightR
   where leftR = renderLayout left (leftW, h)
         rightR = renderLayout right (rightW, h)
-        leftW = w `div` 2
-        rightW = w - leftW
+        leftW = (w-1) `div` 2
+        rightW = w - leftW - 1
 
 vConcat = (<>)
 hConcat lefts rights = map pc $ zip lefts rights
-  where pc (l, r) = l ++ r
+  where pc (l, r) = l ++ "|" ++ r
