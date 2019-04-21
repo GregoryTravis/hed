@@ -25,14 +25,12 @@ import System.IO
 import System.Posix.IO (fdRead, stdInput)
 import System.Posix.Terminal
 
-import Document
-import FrameBuffer
 import Util
 
 speedTests = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout (BlockBuffering Nothing)
-  (FrameBuffer (wid, ht)) <- getFrameBuffer
+  Just (wid, ht) <- getTerminalSize
   t <- IO.readFile "uni.txt"
   let noSpaces = L.filter ('\n' /=) $ L.filter (' ' /=) $ T.unpack t
   let fillScreenString i = take (wid * (ht-0) - 0) (drop i (cycle noSpaces))

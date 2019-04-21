@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 executable hed
   hs-source-dirs:      src
   main-is:             Main.hs
-  other-modules:       Document, FrameBuffer, Util, SpeedTests, RectSampler, SizeReport, Control, Event, State
+  other-modules:       Util, SpeedTests, SizeReport, Control, Event, State
   default-language:    Haskell2010
   ghc-options:         -threaded
   build-depends:       base >= 4.7 && < 5,
