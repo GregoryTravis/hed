@@ -6,11 +6,11 @@ import Control.Concurrent.Chan
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.State
-import System.Console.ANSI
 import System.Exit
 import System.IO
 
 import Control
+import Display
 import Event
 import SizeReport
 import Util
@@ -31,16 +31,6 @@ updateEditorState chan event = do
   put s'
   --io $ msp ("changey", s, s')
   io $ writeChan chan StateChangedEvent
-
-redisplay :: ESAction ()
-redisplay = do
-  s <- get
-  io $ do
-    clearScreen
-    setCursorPosition 0 0
-    case char s of Nothing -> putStr "Hed 0.1"
-                   Just c -> putStr $ take (count s) (repeat c)
-    --msp ("redisplay", s)
 
 eventLoop :: Chan Event -> ESAction a
 eventLoop eventChan = forever $ do
