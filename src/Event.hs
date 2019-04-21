@@ -5,5 +5,6 @@ data Event =
   ResizeEvent |
   GotWindowSizeEvent (Int, Int) |
   RedisplayEvent Char |
-  QuitEvent
+  QuitEvent |
+  StateChangedEvent
   deriving (Show)
