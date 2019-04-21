@@ -5,7 +5,6 @@ module Control
 , withBackgroundThread
 , withRawInput
 , withWindowChangeHandler
-, catchAndRestart
 , EditorState(..)
 , ESAction
 ) where
@@ -56,11 +55,13 @@ withBackgroundThread backgroundIO action = do
   where killThread' tid = do msp "killThread"
                              killThread tid
 
+{- -- Probably ill-conceived
 catchAndRestart io onerr = catch io catcher
   where catcher :: AsyncException -> IO ()
         catcher e = do
           onerr
           catch io catcher
+-}
 
 -- Taken from https://stackoverflow.com/questions/23068218/haskell-read-raw-keyboard-input/36297897#36297897
 withRawInput :: Int -> Int -> ESAction a -> ESAction a
