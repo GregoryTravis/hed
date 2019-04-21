@@ -1,4 +1,4 @@
-module Thing
+module Buffer
 ( Thing(..)
 , renderThing
 ) where

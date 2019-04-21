@@ -9,12 +9,12 @@ import Control.Monad.State
 import System.Exit
 import System.IO
 
+import Buffer
 import Control
 import Display
 import Event
 import SizeReport
 import State
-import Thing
 import Util
 
 inputReader chan = forever $ do

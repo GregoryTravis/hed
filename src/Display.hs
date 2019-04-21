@@ -6,9 +6,9 @@ import Control.Monad.State
 import System.Console.ANSI
 import System.IO
 
+import Buffer
 import Control
 import State
-import Thing
 import Util
 
 redisplay :: ESAction ()

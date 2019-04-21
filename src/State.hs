@@ -7,7 +7,7 @@ module State
 
 import Control.Monad.State
 
-import Thing
+import Buffer
 
 data EditorState = EditorState { thing :: Thing, screenDim :: Maybe (Int, Int) }
   deriving (Eq, Show)
