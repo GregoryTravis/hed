@@ -69,6 +69,6 @@ main = stateMain initState $ do
   --io $ do
   let wri = withRawInput 0 1
       wbt = withBackgroundThread (inputReader eventChan)
-      wst = withWindowChangeHandler (writeChan eventChan ResizeEvent)
+      wct = withWindowChangeHandler (writeChan eventChan ResizeEvent)
       loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
-  wri (io $ wbt . wst $ loop)
+  (wri . wct) (io $ wbt $ loop)

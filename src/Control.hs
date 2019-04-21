@@ -44,8 +44,10 @@ withSignalHandler signal handlerIO io = bracket install uninstall (\_ -> io)
         uninstall originalHandler = do msp "uninstall"
                                        installHandler signal originalHandler Nothing
 
-withWindowChangeHandler :: IO () -> IO a -> IO a
-withWindowChangeHandler wcIO io = withSignalHandler windowChange wcIO io
+withWindowChangeHandler :: IO () -> ESAction a -> ESAction a
+withWindowChangeHandler handler action = do
+  s <- get
+  io $ withSignalHandler windowChange handler (runStateT action s >>= (\(a, s) -> return a))
 
 withBackgroundThread backgroundIO io = bracket (forkIO backgroundIO) killThread' (\_ -> io)
   where killThread' tid = do msp "killThread"
