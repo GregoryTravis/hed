@@ -6,6 +6,7 @@ import Control.Concurrent.Chan
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.State
+import System.Console.ANSI
 import System.Exit
 import System.IO
 
@@ -21,7 +22,7 @@ inputReader chan = forever $ do
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
 
 transformEditorState :: EditorState -> Event -> EditorState
-transformEditorState es (KeyEvent c) = es { char = Just c }
+transformEditorState es (KeyEvent c) = es { char = Just c, count = count es + 1 }
 
 updateEditorState :: Chan Event -> Event -> ESAction ()
 updateEditorState chan event = do
@@ -34,7 +35,12 @@ updateEditorState chan event = do
 redisplay :: ESAction ()
 redisplay = do
   s <- get
-  io $ msp ("redisplay", s)
+  io $ do
+    clearScreen
+    setCursorPosition 0 0
+    case char s of Nothing -> putStr "Hed 0.1"
+                   Just c -> putStr $ take (count s) (repeat c)
+    --msp ("redisplay", s)
 
 eventLoop :: Chan Event -> ESAction a
 eventLoop eventChan = forever $ do
@@ -49,32 +55,14 @@ eventLoop eventChan = forever $ do
                 KeyEvent c -> updateEditorState eventChan (KeyEvent c)
                 StateChangedEvent -> redisplay
 
-pop :: ESAction Integer
-pop = do
-  es@(EditorState { stack = (x:xs) }) <- get
-  put (es { stack = (xs) })
-  return x
-
-push :: Integer -> ESAction ()
-push x = do
-  es@(EditorState { stack = (xs) }) <- get
-  put (es { stack = (x:xs) })
-  return ()
-
-initState = EditorState { stack = [], char = Nothing }
+initState = EditorState { char = Nothing, count = 0 }
 
 main :: IO ()
 main = stateMain initState $ do
-  () <- push 10
-  () <- push 20
-  x <- pop
-  io $ print x
-  y <- pop
-  io $ print y
   io $ do
     hSetBuffering stdin NoBuffering
     hSetBuffering stdout NoBuffering
-    msp "Hed start"
+    --msp "Hed start"
 
   eventChan <- io $ (newChan :: IO (Chan Event))
   --io $ do
@@ -82,4 +70,5 @@ main = stateMain initState $ do
       wbt = withBackgroundThread (inputReader eventChan)
       wct = withWindowChangeHandler (writeChan eventChan ResizeEvent)
       loop = eventLoop eventChan
+  io $ writeChan eventChan StateChangedEvent
   (wri . wct . wbt) loop
