@@ -71,4 +71,4 @@ main = stateMain initState $ do
       wbt = withBackgroundThread (inputReader eventChan)
       wct = withWindowChangeHandler (writeChan eventChan ResizeEvent)
       loop = catchAndRestart (eventLoop eventChan) (writeChan eventChan QuitEvent)
-  (wri . wct) (io $ wbt $ loop)
+  (wri . wct . wbt) (io $ loop)

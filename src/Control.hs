@@ -49,7 +49,10 @@ withWindowChangeHandler handler action = do
   s <- get
   io $ withSignalHandler windowChange handler (runStateT action s >>= (\(a, s) -> return a))
 
-withBackgroundThread backgroundIO io = bracket (forkIO backgroundIO) killThread' (\_ -> io)
+withBackgroundThread :: IO () -> ESAction a -> ESAction a
+withBackgroundThread backgroundIO action = do
+  s <- get
+  io $ bracket (forkIO backgroundIO) killThread' (\_ -> runStateT action s >>= (\(a, s) -> return a))
   where killThread' tid = do msp "killThread"
                              killThread tid
 
