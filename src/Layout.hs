@@ -6,11 +6,9 @@ module Layout
 import qualified Data.Map as M
 
 import Buffer
-import State
+import Types
 
-data Layout = Buf String | HStack Layout Layout | VStack Layout Layout
-
-renderLayout :: EditorState -> Layout -> (Int, Int) -> [String]
+--renderLayout :: EditorState -> Layout -> (Int, Int) -> [String]
 renderLayout es (Buf bufferName) dim = renderBuffer (buffers es M.! bufferName) dim
 renderLayout es (VStack top bottom) (w, h) = vConcat w topR bottomR
   where topR = renderLayout es top (w, topH)

@@ -3,8 +3,7 @@ module Buffer
 , renderBuffer
 ) where
 
-data Buffer = Buffer Char
-  deriving (Eq, Show)
+import Types
 
 renderBuffer :: Buffer -> (Int, Int) -> [String]
 renderBuffer (Buffer c) (w, h) = [blank] <> lines <> [blank]

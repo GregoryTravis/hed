@@ -17,12 +17,12 @@ redisplay :: ESAction ()
 redisplay = do
   s <- get
   io $ do
-    clearScreen
+    --clearScreen
     setCursorPosition 0 0
     case screenDim s of Nothing -> msp "Can't determine screen dimensions"
                         Just dim -> withStdoutBuffering (BlockBuffering Nothing) $ do 
                                       setCursorPosition 0 0
-                                      putStr $ mconcat $ checkSize (renderLayout s (VStack (Buf (currentBuffer s)) (Buf "hey")) dim) dim
+                                      putStr $ mconcat $ checkSize (renderLayout s (layout s) dim) dim
                                       --msp s
                                       setCursorPosition 0 0
                                       hFlush stdout

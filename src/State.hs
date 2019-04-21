@@ -9,18 +9,13 @@ import Control.Monad.State
 import qualified Data.Map as M
 
 import Buffer
-
-data EditorState = EditorState
-  { buffers :: M.Map String Buffer
-  , currentBuffer :: String
-  , screenDim :: Maybe (Int, Int)
-  }
-  deriving (Eq, Show)
+import Types
 
 initEditorState = EditorState
   { buffers = M.fromList [("scratch", Buffer 'a'), ("hey", Buffer 'q')]
   , currentBuffer = "scratch"
   , screenDim = Nothing
+  , layout = (VStack (Buf "scratch") (Buf "hey"))
   }
 
 type ESAction a = StateT EditorState IO a
