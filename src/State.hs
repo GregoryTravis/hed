@@ -6,7 +6,9 @@ module State
 
 import Control.Monad.State
 
-data EditorState = EditorState { char :: Maybe Char, count :: Int }
+import Thing
+
+data EditorState = EditorState { thing :: Thing }
   deriving (Eq, Show)
 
 type ESAction a = StateT EditorState IO a

@@ -13,6 +13,7 @@ import Control
 import Display
 import Event
 import SizeReport
+import Thing
 import Util
 
 inputReader chan = forever $ do
@@ -22,7 +23,7 @@ inputReader chan = forever $ do
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
 
 transformEditorState :: EditorState -> Event -> EditorState
-transformEditorState es (KeyEvent c) = es { char = Just c, count = count es + 1 }
+transformEditorState es (KeyEvent c) = es { thing = Thing c }
 
 updateEditorState :: Chan Event -> Event -> ESAction ()
 updateEditorState chan event = do
@@ -45,7 +46,7 @@ eventLoop eventChan = forever $ do
                 KeyEvent c -> updateEditorState eventChan (KeyEvent c)
                 StateChangedEvent -> redisplay
 
-initState = EditorState { char = Nothing, count = 0 }
+initState = EditorState { thing = Thing 'a' }
 
 main :: IO ()
 main = stateMain initState $ do
