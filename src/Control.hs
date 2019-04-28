@@ -69,16 +69,17 @@ withRawInput vmin vtime application = do
         flip withMinInput vmin         $ -- wait for >= vmin bytes per read
         oldTermSettings
 
+  {- when we're done -}
+  let revert = do setTerminalAttributes stdInput oldTermSettings Immediately
+                  return ()
+
   {- install new settings -}
   io $ setTerminalAttributes stdInput newTermSettings Immediately
 
   {- restore old settings no matter what; this prevents the terminal
    - from becoming borked if the application halts with an exception
    -}
-  s <- get
-  io $ (runStateT application s >>= (\(a, s) -> return a))
-         `finally` do setTerminalAttributes stdInput oldTermSettings Immediately
-                      return ()
+  transformAsIO application $ \io -> io `finally` revert
 
 withStdoutBuffering :: BufferMode -> IO a -> IO a
 withStdoutBuffering mode action = do
