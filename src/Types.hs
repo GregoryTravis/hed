@@ -17,5 +17,5 @@ data EditorState = EditorState
   }
   deriving (Eq, Show)
 
-data Buffer = Buffer Char
+data Buffer = Buffer { getBufferContents :: String }
   deriving (Eq, Show)

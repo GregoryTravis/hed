@@ -12,7 +12,7 @@ import Buffer
 import Types
 
 initEditorState = EditorState
-  { buffers = M.fromList [("scratch", Buffer 'a'), ("hey", Buffer 'q')]
+  { buffers = M.fromList [("scratch", makeCharBuffer 'a'), ("hey", makeCharBuffer 'q')]
   , currentBuffer = "scratch"
   , screenDim = Nothing
   , layout = (VStack (Buf "scratch") (Buf "hey"))

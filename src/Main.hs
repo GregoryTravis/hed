@@ -26,7 +26,7 @@ inputReader chan = forever $ do
 
 transformEditorState :: EditorState -> Event -> EditorState
 transformEditorState es (KeyEvent c) = es { buffers = updated }
-  where updated = M.insert (currentBuffer es) (Buffer c) (buffers es)
+  where updated = M.insert (currentBuffer es) (makeCharBuffer c) (buffers es)
 transformEditorState es (GotWindowSizeEvent dim) = es { screenDim = Just dim }
 
 updateEditorState :: Chan Event -> Event -> ESAction ()
