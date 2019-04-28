@@ -39,25 +39,20 @@ withSignalHandler signal handlerIO io = bracket install uninstall (\_ -> io)
         uninstall originalHandler = do msp "uninstall"
                                        installHandler signal originalHandler Nothing
 
-withWindowChangeHandler :: IO () -> ESAction a -> ESAction a
-withWindowChangeHandler handler action = do
+transformAsIO :: ESAction a -> (IO a -> IO a) -> ESAction a
+transformAsIO esAction iot = do
   s <- get
-  io $ withSignalHandler windowChange handler (runStateT action s >>= (\(a, s) -> return a))
+  io $ iot $ runStateT esAction s >>= (\(a, s) -> return a)
+
+withWindowChangeHandler :: IO () -> ESAction a -> ESAction a
+withWindowChangeHandler handler action = transformAsIO action wrap
+  where wrap ioAction = withSignalHandler windowChange handler ioAction
 
 withBackgroundThread :: IO () -> ESAction a -> ESAction a
-withBackgroundThread backgroundIO action = do
-  s <- get
-  io $ bracket (forkIO backgroundIO) killThread' (\_ -> runStateT action s >>= (\(a, s) -> return a))
-  where killThread' tid = do msp "killThread"
+withBackgroundThread backgroundIO action = transformAsIO action wrap
+  where wrap ioAction = bracket (forkIO backgroundIO) killThread' (\_ -> ioAction)
+        killThread' tid = do msp "killThread"
                              killThread tid
-
-{- -- Probably ill-conceived
-catchAndRestart io onerr = catch io catcher
-  where catcher :: AsyncException -> IO ()
-        catcher e = do
-          onerr
-          catch io catcher
--}
 
 -- Taken from https://stackoverflow.com/questions/23068218/haskell-read-raw-keyboard-input/36297897#36297897
 withRawInput :: Int -> Int -> ESAction a -> ESAction a
