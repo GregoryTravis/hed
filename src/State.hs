@@ -12,10 +12,10 @@ import Buffer
 import Types
 
 initEditorState = EditorState
-  { buffers = M.fromList [("scratch", makeCharBuffer 'a'), ("hey", makeCharBuffer 'q')]
+  { buffers = M.fromList [("scratch", makeCharBuffer 'a'), ("hey", makeStringBuffer "zxcv")]
   , currentBuffer = "scratch"
   , screenDim = Nothing
-  , layout = (VStack (Buf "scratch") (Buf "hey"))
+  , layout = (VStack (Buf "hey") (Buf "scratch"))
   }
 
 type ESAction a = StateT EditorState IO a
