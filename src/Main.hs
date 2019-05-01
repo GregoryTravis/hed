@@ -57,6 +57,7 @@ main :: IO ()
 main = stateMain initEditorState $ do
   openFile "uni.txt"
   openFile "inu.txt"
+  newWindow "uni.txt"
   io $ do
     hSetBuffering stdin NoBuffering
     hSetBuffering stdout NoBuffering

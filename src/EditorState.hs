@@ -1,7 +1,8 @@
 module EditorState
 ( initEditorState
-, newFileBuffer
+--, newFileBuffer
 , openFile
+, newWindow
 ) where
 
 import Control.Monad.State
@@ -26,8 +27,8 @@ transformEditorState f = do
 addBuffer es name buf = es { buffers = M.insert name buf (buffers es) }
 
 -- This should take a Window later
-newWindow :: EditorState -> String -> EditorState
-newWindow es name = es { layout = addBufferToLayout (layout es) name }
+newWindow :: String -> ESAction ()
+newWindow name = transformEditorState $ \es -> es { layout = addBufferToLayout (layout es) name }
 
 newFileBuffer :: String -> ESAction ()
 newFileBuffer filename = do
@@ -38,4 +39,4 @@ newFileBuffer filename = do
 
 openFile filename = do
   newFileBuffer filename
-  transformEditorState $ \es -> (newWindow es filename)
+  newWindow filename
