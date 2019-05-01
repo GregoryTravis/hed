@@ -56,7 +56,7 @@ eventLoop eventChan = forever $ do
 main :: IO ()
 main = stateMain initEditorState $ do
   openFile "uni.txt"
-  --openFile "inu.txt"
+  openFile "inu.txt"
   io $ do
     hSetBuffering stdin NoBuffering
     hSetBuffering stdout NoBuffering
