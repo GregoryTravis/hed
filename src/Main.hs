@@ -8,7 +8,7 @@ import Control.Monad.IO.Class
 import Control.Monad.State
 import qualified Data.Map as M
 import System.Exit
-import System.IO
+import System.IO hiding (openFile)
 
 import Buffer
 import Control
@@ -26,10 +26,6 @@ inputReader chan = forever $ do
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
 
 transformEditorState :: EditorState -> Event -> ESAction EditorState
-transformEditorState es (KeyEvent 'o') = do
-  s <- io $ readFile "uni.txt"
-  let buf = Buffer { bufferContents = s }
-  return $ newWindow es "uni.txt" buf
 transformEditorState es (KeyEvent c) = return $ es { buffers = updated }
   where updated = buffers es
   --where updated = M.insert (currentBuffer es) (makeCharBuffer c) (buffers es)
@@ -59,6 +55,8 @@ eventLoop eventChan = forever $ do
 
 main :: IO ()
 main = stateMain initEditorState $ do
+  openFile "uni.txt"
+  --openFile "inu.txt"
   io $ do
     hSetBuffering stdin NoBuffering
     hSetBuffering stdout NoBuffering
