@@ -6,7 +6,7 @@ module Types
 
 import qualified Data.Map as M
 
-data Layout = Buf String | HStack Layout Layout | VStack Layout Layout
+data Layout = Buf String | HStack Layout Layout | VStack Layout Layout | EmptyLayout
   deriving (Eq, Show)
 
 data EditorState = EditorState
@@ -17,5 +17,5 @@ data EditorState = EditorState
   }
   deriving (Eq, Show)
 
-data Buffer = Buffer { getBufferContents :: String }
+data Buffer = Buffer { bufferContents :: String }
   deriving (Eq, Show)

@@ -13,6 +13,7 @@ import System.IO
 import Buffer
 import Control
 import Display
+import EditorState
 import Event
 import SizeReport
 import State
@@ -24,15 +25,20 @@ inputReader chan = forever $ do
   case p of Left dim -> writeChan chan (GotWindowSizeEvent dim)
             Right s -> mapM_ (\c -> writeChan chan (KeyEvent c)) s
 
-transformEditorState :: EditorState -> Event -> EditorState
-transformEditorState es (KeyEvent c) = es { buffers = updated }
-  where updated = M.insert (currentBuffer es) (makeCharBuffer c) (buffers es)
-transformEditorState es (GotWindowSizeEvent dim) = es { screenDim = Just dim }
+transformEditorState :: EditorState -> Event -> ESAction EditorState
+transformEditorState es (KeyEvent 'o') = do
+  s <- io $ readFile "uni.txt"
+  let buf = Buffer { bufferContents = s }
+  return $ newWindow es "uni.txt" buf
+transformEditorState es (KeyEvent c) = return $ es { buffers = updated }
+  where updated = buffers es
+  --where updated = M.insert (currentBuffer es) (makeCharBuffer c) (buffers es)
+transformEditorState es (GotWindowSizeEvent dim) = return $ es { screenDim = Just dim }
 
 updateEditorState :: Chan Event -> Event -> ESAction ()
 updateEditorState chan event = do
   s <- get
-  let s' = transformEditorState s event
+  s' <- transformEditorState s event
   put s'
   --io $ msp ("changey", s, s')
   io $ writeChan chan StateChangedEvent
