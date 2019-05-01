@@ -10,7 +10,7 @@ import Buffer
 import Types
 
 --renderLayout :: EditorState -> Layout -> (Int, Int) -> [String]
-renderLayout es (Buf bufferName) dim = renderBuffer (buffers es M.! bufferName) dim
+renderLayout es (Buf bufferName) dim = renderBuffer (buffers es M.! bufferName) (3, 2) dim
 renderLayout es (VStack top bottom) (w, h) = vConcat w topR bottomR
   where topR = renderLayout es top (w, topH)
         bottomR = renderLayout es bottom (w, bottomH)
