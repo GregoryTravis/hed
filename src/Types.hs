@@ -2,11 +2,12 @@ module Types
 ( Layout(..)
 , EditorState(..)
 , Buffer(..)
+, Window(..)
 ) where
 
 import qualified Data.Map as M
 
-data Layout = Buf String | HStack Layout Layout | VStack Layout Layout | EmptyLayout
+data Layout = Win Window | HStack Layout Layout | VStack Layout Layout | EmptyLayout
   deriving (Eq, Show)
 
 data EditorState = EditorState
@@ -15,6 +16,9 @@ data EditorState = EditorState
   , screenDim :: Maybe (Int, Int)
   , layout :: Layout
   }
+  deriving (Eq, Show)
+
+data Window = Window String (Int, Int)
   deriving (Eq, Show)
 
 data Buffer = Buffer { bufferContents :: String }

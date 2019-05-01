@@ -10,7 +10,7 @@ import Buffer
 import Types
 
 --renderLayout :: EditorState -> Layout -> (Int, Int) -> [String]
-renderLayout es (Buf bufferName) dim = renderBuffer (buffers es M.! bufferName) (3, 2) dim
+renderLayout es (Win (Window bufferName offset)) dim = renderBuffer (buffers es M.! bufferName) offset dim
 renderLayout es (VStack top bottom) (w, h) = vConcat w topR bottomR
   where topR = renderLayout es top (w, topH)
         bottomR = renderLayout es bottom (w, bottomH)
@@ -28,4 +28,4 @@ hConcat lefts rights = map pc $ zip lefts rights
   where pc (l, r) = l ++ "|" ++ r
 
 addBufferToLayout :: Layout -> String -> Layout
-addBufferToLayout EmptyLayout buf = Buf buf
+addBufferToLayout EmptyLayout name = Win (Window name (0, 0))
