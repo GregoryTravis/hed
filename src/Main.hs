@@ -39,6 +39,12 @@ updateEditorState chan event = do
   --io $ msp ("changey", s, s')
   io $ writeChan chan StateChangedEvent
 
+shew :: String -> ESAction ()
+shew s = do
+  es <- get
+  let scratch = buffers es M.! "scratch"
+  put $ es { buffers = M.insert "scratch" (appendToBuffer scratch (s ++ "\n")) (buffers es) }
+
 eventLoop :: Chan Event -> ESAction a
 eventLoop eventChan = forever $ do
   event <- io $ readChan eventChan
@@ -58,6 +64,7 @@ main = stateMain initEditorState $ do
   openFile "uni.txt"
   openFile "inu.txt"
   newWindow "uni.txt"
+  shew "ho"
   io $ do
     hSetBuffering stdin NoBuffering
     hSetBuffering stdout NoBuffering

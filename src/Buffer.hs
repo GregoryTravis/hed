@@ -1,6 +1,7 @@
 module Buffer
 ( Buffer(..)
 , renderBuffer
+, appendToBuffer
 ) where
 
 import Data.List.Split
@@ -17,3 +18,6 @@ renderBuffer buf (x, y) (w, h) = assertM "offset" ok hPaddedLines
         hPaddedLines = paddedLines ++ (take (h - length paddedLines) $ repeat blankLine)
         blankLine = take w (repeat ' ')
         ok = x >=0 && y >= 0
+
+appendToBuffer :: Buffer -> String -> Buffer
+appendToBuffer buf s = buf { bufferContents = bufferContents buf ++ s }

@@ -14,10 +14,12 @@ data EditorState = EditorState
   { buffers :: M.Map String Buffer
   , screenDim :: Maybe (Int, Int)
   , layout :: Layout
+  , currentWindowId :: Int
+  , nextWindowId :: Int
   }
   deriving (Eq, Show)
 
-data Window = Window String (Int, Int)
+data Window = Window Int String (Int, Int)
   deriving (Eq, Show)
 
 data Buffer = Buffer { bufferContents :: String }

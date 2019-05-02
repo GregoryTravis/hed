@@ -14,20 +14,26 @@ import Layout
 import Types
 
 initEditorState = EditorState
-  { buffers = M.fromList [("scratch", Buffer "hi")]
+  { buffers = M.fromList [("scratch", Buffer "hi\n")]
   , screenDim = Nothing
-  , layout = Win (Window "scratch" (0, 0))
+  , layout = Win (Window 0 "scratch" (0, 0))
+  , currentWindowId  = 0
+  , nextWindowId = 1
   }
 
-transformEditorState f = do
-  es <- get
-  put (f es)
+--transformEditorState f = do
+  --es <- get
+  --put (f es)
 
 addBuffer es name buf = es { buffers = M.insert name buf (buffers es) }
 
 -- This should take a Window later
 newWindow :: String -> ESAction ()
-newWindow name = transformEditorState $ \es -> es { layout = addBufferToLayout (layout es) name }
+newWindow name = do
+  es <- get
+  let newWindowId = nextWindowId es
+  put $ es { layout = addBufferToLayout (layout es) newWindowId name,
+             nextWindowId = nextWindowId es + 1 }
 
 newFileBuffer :: String -> ESAction ()
 newFileBuffer filename = do
