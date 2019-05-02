@@ -7,10 +7,32 @@ module Layout
 , hasWindow
 ) where
 
+import Data.List (find)
+import Data.Maybe
 import qualified Data.Map as M
 
 import Buffer
 import Types
+
+data WindowPlacement = WindowPlacement Window (Int, Int) (Int, Int)
+
+getWindowArrangement :: Layout -> (Int, Int) -> (Int, Int) -> [WindowPlacement]
+getWindowArrangement (Win win) pos dim = [WindowPlacement win pos dim]
+getWindowArrangement (VStack top bottom) (x, y) (w, h) = topA ++ bottomA
+  where topA = getWindowArrangement top (x, y) (w, topH)
+        bottomA = getWindowArrangement bottom (x, y + topH + 1) (w, bottomH)
+        topH = (h-1) `div` 2
+        bottomH = h - topH - 1
+getWindowArrangement (HStack left right) (x, y) (w, h) = leftA ++ rightA
+  where leftA = getWindowArrangement left (x, y) (leftW, h)
+        rightA = getWindowArrangement right (x + leftW + 1, y) (rightW, h)
+        leftW = (w-1) `div` 2
+        rightW = w - leftW - 1
+getWindowArrangement EmptyLayout pos dim = []
+
+getWindowPlacement :: (Int, Int) -> Layout -> Int-> WindowPlacement
+getWindowPlacement dim layout windowId = fromJust $ find (withId windowId) (getWindowArrangement layout (0, 0) dim)
+  where withId anId (WindowPlacement (Window id _ _) _ _) = anId == id
 
 --renderLayout :: EditorState -> Layout -> (Int, Int) -> [String]
 renderLayout es (Win (Window _ bufferName offset)) dim = renderBuffer (buffers es M.! bufferName) offset dim
