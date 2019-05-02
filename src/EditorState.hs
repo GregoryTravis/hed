@@ -19,6 +19,7 @@ initEditorState = EditorState
   , layout = Win (Window 0 "scratch" (0, 0))
   , currentWindowId  = 0
   , nextWindowId = 1
+  , debugStr = "debug"
   }
 
 --transformEditorState f = do

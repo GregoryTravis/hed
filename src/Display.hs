@@ -24,11 +24,16 @@ redisplay = do
                         Just dim -> withStdoutBuffering (BlockBuffering Nothing) $ do 
                                       setCursorPosition 0 0
                                       clearScreen
-                                      msp $ map length (renderLayout s (layout s) dim)
+                                      --msp $ map length (renderLayout s (layout s) dim)
                                       putStr $ mconcat $ checkSize (renderLayout s (layout s) dim) dim
-                                      --msp s
+                                      showDebugStr s
                                       setCursorPosition 0 0
                                       hFlush stdout
   where checkSize :: [String] -> (Int, Int) -> [String]
         checkSize s (w, h) = assertM "bad buffer rendering" ok s
           where ok = (length s == h) && (all (w==) (map length s))
+
+showDebugStr :: EditorState -> IO ()
+showDebugStr es = do
+  setCursorPosition 0 8
+  putStr (debugStr es)

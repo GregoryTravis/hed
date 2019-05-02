@@ -16,6 +16,7 @@ data EditorState = EditorState
   , layout :: Layout
   , currentWindowId :: Int
   , nextWindowId :: Int
+  , debugStr :: String
   }
   deriving (Eq, Show)
 
