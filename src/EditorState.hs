@@ -14,10 +14,9 @@ import Layout
 import Types
 
 initEditorState = EditorState
-  { buffers = M.fromList []
-  , currentBuffer = "scratch"
+  { buffers = M.fromList [("scratch", Buffer "hi")]
   , screenDim = Nothing
-  , layout = EmptyLayout
+  , layout = Win (Window "scratch" (0, 0))
   }
 
 transformEditorState f = do

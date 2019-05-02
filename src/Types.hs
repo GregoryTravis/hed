@@ -12,7 +12,6 @@ data Layout = Win Window | HStack Layout Layout | VStack Layout Layout | EmptyLa
 
 data EditorState = EditorState
   { buffers :: M.Map String Buffer
-  , currentBuffer :: String
   , screenDim :: Maybe (Int, Int)
   , layout :: Layout
   }
