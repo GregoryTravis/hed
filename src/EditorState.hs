@@ -3,6 +3,7 @@ module EditorState
 --, newFileBuffer
 , openFile
 , newWindow
+, switchToWindow
 ) where
 
 import Control.Monad.State
@@ -12,6 +13,7 @@ import Buffer
 import Control
 import Layout
 import Types
+import Util
 
 initEditorState = EditorState
   { buffers = M.fromList [("scratch", Buffer "hi\n")]
@@ -46,3 +48,10 @@ newFileBuffer filename = do
 openFile filename = do
   newFileBuffer filename
   newWindow filename
+
+switchToWindow :: Int -> ESAction ()
+switchToWindow windowId = do
+  es <- get
+  let es' = es { currentWindowId = windowId }
+  let ok = hasWindow (layout es) windowId
+  put $ assertM "no such window" ok es'

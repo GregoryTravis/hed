@@ -24,4 +24,7 @@ data Window = Window Int String (Int, Int)
   deriving (Eq, Show)
 
 data Buffer = Buffer { bufferContents :: String }
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Buffer where
+  show (Buffer { bufferContents = bc }) = "Buffer \"" ++ (take 10 bc) ++ "\""

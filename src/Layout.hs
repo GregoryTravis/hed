@@ -2,6 +2,8 @@ module Layout
 ( Layout(..)
 , renderLayout
 , addBufferToLayout
+, getWindows
+, hasWindow
 ) where
 
 import qualified Data.Map as M
@@ -22,6 +24,15 @@ renderLayout es (HStack left right) (w, h) = hConcat leftR rightR
         leftW = (w-1) `div` 2
         rightW = w - leftW - 1
 renderLayout es EmptyLayout (w, h) = take h (repeat (take w (repeat '.')))
+
+getWindows :: Layout -> [Window]
+getWindows (Win w) = [w]
+getWindows (VStack top bottom) = (getWindows top) ++ (getWindows bottom)
+getWindows (HStack left right) = (getWindows left) ++ (getWindows right)
+getWindows EmptyLayout = []
+
+hasWindow layout windowId = elem windowId $ map getId (getWindows layout)
+  where getId (Window id _ _) = id
 
 vConcat width top bottom = top <> [(take width (repeat '-'))] <> bottom
 hConcat lefts rights = map pc $ zip lefts rights

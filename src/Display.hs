@@ -1,5 +1,7 @@
 module Display
 ( redisplay
+, clearScreen
+, setCursorPosition
 ) where
 
 import Control.Monad.State

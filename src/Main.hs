@@ -50,8 +50,12 @@ eventLoop eventChan = forever $ do
   event <- io $ readChan eventChan
   --io $ msp ("Loop event", event)
   case event of ResizeEvent -> io updateTerminalSize
-                QuitEvent -> io $ do msp "exiting"
-                                     exitSuccess
+                QuitEvent -> do es <- get
+                                io $ do msp "exiting"
+                                        clearScreen
+                                        setCursorPosition 0 0
+                                        msp es
+                                        exitSuccess
                 --GotWindowSizeEvent (w, h) -> io $ msp ("WSE", w, h)
                 e@(GotWindowSizeEvent (w, h)) -> updateEditorState eventChan e
                 KeyEvent 'q' -> io $ writeChan eventChan QuitEvent
@@ -64,6 +68,7 @@ main = stateMain initEditorState $ do
   openFile "uni.txt"
   openFile "inu.txt"
   newWindow "uni.txt"
+  switchToWindow 2
   shew "ho"
   io $ do
     hSetBuffering stdin NoBuffering
