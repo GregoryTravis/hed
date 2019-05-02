@@ -5,6 +5,7 @@ module Layout
 , getWindows
 , getWindowIds
 , hasWindow
+, getWindowPlacement
 ) where
 
 import Data.List (find)
@@ -13,8 +14,6 @@ import qualified Data.Map as M
 
 import Buffer
 import Types
-
-data WindowPlacement = WindowPlacement Window (Int, Int) (Int, Int)
 
 getWindowArrangement :: Layout -> (Int, Int) -> (Int, Int) -> [WindowPlacement]
 getWindowArrangement (Win win) pos dim = [WindowPlacement win pos dim]
@@ -30,8 +29,8 @@ getWindowArrangement (HStack left right) (x, y) (w, h) = leftA ++ rightA
         rightW = w - leftW - 1
 getWindowArrangement EmptyLayout pos dim = []
 
-getWindowPlacement :: (Int, Int) -> Layout -> Int-> WindowPlacement
-getWindowPlacement dim layout windowId = fromJust $ find (withId windowId) (getWindowArrangement layout (0, 0) dim)
+getWindowPlacement :: EditorState -> Int-> WindowPlacement
+getWindowPlacement (EditorState { screenDim = dim, layout = layout }) windowId = fromJust $ find (withId windowId) (getWindowArrangement layout (0, 0) (fromJust dim))
   where withId anId (WindowPlacement (Window id _ _) _ _) = anId == id
 
 --renderLayout :: EditorState -> Layout -> (Int, Int) -> [String]

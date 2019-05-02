@@ -5,6 +5,7 @@ module EditorState
 , newWindow
 , switchToWindow
 , nextWindow
+, getCursorPos
 ) where
 
 import Control.Monad.State
@@ -65,3 +66,7 @@ nextWindow = do
       current = currentWindowId es
       nextWindowId = fromJust $ valueAfterCyclic wids current
   switchToWindow nextWindowId
+
+getCursorPos :: EditorState -> Int -> (Int, Int)
+getCursorPos es windowId =
+  case getWindowPlacement es windowId of (WindowPlacement win pos dim) -> pos

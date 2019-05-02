@@ -3,6 +3,7 @@ module Types
 , EditorState(..)
 , Buffer(..)
 , Window(..)
+, WindowPlacement(..)
 ) where
 
 import qualified Data.Map as M
@@ -28,3 +29,6 @@ data Buffer = Buffer { bufferContents :: String }
 
 instance Show Buffer where
   show (Buffer { bufferContents = bc }) = "Buffer \"" ++ (take 10 bc) ++ "\""
+
+data WindowPlacement = WindowPlacement Window (Int, Int) (Int, Int)
+  deriving (Eq, Show)

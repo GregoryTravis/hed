@@ -12,6 +12,7 @@ import System.IO
 
 import Buffer
 import Control
+import EditorState
 import Layout
 import State
 import Util
@@ -29,12 +30,15 @@ redisplay = do
                                       --msp $ map length (renderLayout s (layout s) dim)
                                       putStr $ mconcat $ checkSize (renderLayout s (layout s) dim) dim
                                       showDebugStr s
-                                      setCursorPosition 0 0
+                                      --setCursorPosition 0 0
+                                      moveCursorToCurrentWindow s
                                       hFlush stdout
   where checkSize :: [String] -> (Int, Int) -> [String]
         checkSize s (w, h) = assertM "bad buffer rendering" ok s
           where ok = (length s == h) && (all (w==) (map length s))
 
+moveCursorToCurrentWindow es = do
+  case getCursorPos es (currentWindowId es) of (w, h) -> setCursorPosition h w
 showDebugStr :: EditorState -> IO ()
 showDebugStr es = do
   setCursorPosition 0 8
