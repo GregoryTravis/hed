@@ -4,10 +4,12 @@ module EditorState
 , openFile
 , newWindow
 , switchToWindow
+, nextWindow
 ) where
 
 import Control.Monad.State
 import qualified Data.Map as M
+import Data.Maybe
 
 import Buffer
 import Control
@@ -55,3 +57,11 @@ switchToWindow windowId = do
   let es' = es { currentWindowId = windowId }
   let ok = hasWindow (layout es) windowId
   put $ assertM "no such window" ok es'
+
+nextWindow :: ESAction ()
+nextWindow = do
+  es <- get
+  let wids = getWindowIds (layout es)
+      current = currentWindowId es
+      nextWindowId = fromJust $ valueAfterCyclic wids current
+  switchToWindow nextWindowId

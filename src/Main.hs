@@ -68,7 +68,8 @@ main = stateMain initEditorState $ do
   openFile "uni.txt"
   openFile "inu.txt"
   newWindow "uni.txt"
-  switchToWindow 2
+  --switchToWindow 2
+  nextWindow
   shew "ho"
   io $ do
     hSetBuffering stdin NoBuffering

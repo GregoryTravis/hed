@@ -3,6 +3,7 @@ module Layout
 , renderLayout
 , addBufferToLayout
 , getWindows
+, getWindowIds
 , hasWindow
 ) where
 
@@ -31,8 +32,10 @@ getWindows (VStack top bottom) = (getWindows top) ++ (getWindows bottom)
 getWindows (HStack left right) = (getWindows left) ++ (getWindows right)
 getWindows EmptyLayout = []
 
-hasWindow layout windowId = elem windowId $ map getId (getWindows layout)
+getWindowIds layout = map getId (getWindows layout)
   where getId (Window id _ _) = id
+
+hasWindow layout windowId = elem windowId (getWindowIds layout)
 
 vConcat width top bottom = top <> [(take width (repeat '-'))] <> bottom
 hConcat lefts rights = map pc $ zip lefts rights

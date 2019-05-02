@@ -21,6 +21,7 @@ module Util
 , time
 , timeN
 , timeList
+, valueAfterCyclic
 ) where
 
 import Control.Exception
@@ -131,3 +132,9 @@ timeList s as n = do
     --printf "%s %0.3f sec\n" s (diff :: Double)
     --return $ "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral n / diff)
     return $ printf "%s %f sec, %f/s\n" s (diff :: Double) (fromIntegral (n * (length as)) / diff)
+
+valueAfterCyclic :: Eq a => [a] -> a -> Maybe a
+valueAfterCyclic xs x =
+  case dropWhile (x/=) cxs of (x' : next : rest) -> Just next
+                              [x'] -> Nothing
+  where cxs = xs ++ [head xs]
