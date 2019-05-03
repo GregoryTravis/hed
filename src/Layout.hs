@@ -31,10 +31,10 @@ getWindowArrangement EmptyLayout pos dim = []
 
 getWindowPlacement :: EditorState -> Int-> WindowPlacement
 getWindowPlacement (EditorState { screenDim = dim, layout = layout }) windowId = fromJust $ find (withId windowId) (getWindowArrangement layout (0, 0) (fromJust dim))
-  where withId anId (WindowPlacement (Window id _ _) _ _) = anId == id
+  where withId anId (WindowPlacement (Window id _ _ _) _ _) = anId == id
 
 --renderLayout :: EditorState -> Layout -> (Int, Int) -> [String]
-renderLayout es (Win (Window _ bufferName origin)) dim = renderBuffer (buffers es M.! bufferName) origin dim
+renderLayout es (Win (Window _ bufferName _ origin)) dim = renderBuffer (buffers es M.! bufferName) origin dim
 renderLayout es (VStack top bottom) (w, h) = vConcat w topR bottomR
   where topR = renderLayout es top (w, topH)
         bottomR = renderLayout es bottom (w, bottomH)
@@ -54,7 +54,7 @@ getWindows (HStack left right) = (getWindows left) ++ (getWindows right)
 getWindows EmptyLayout = []
 
 getWindowIds layout = map getId (getWindows layout)
-  where getId (Window id _ _) = id
+  where getId (Window id _ _ _) = id
 
 hasWindow layout windowId = elem windowId (getWindowIds layout)
 
@@ -63,5 +63,5 @@ hConcat lefts rights = map pc $ zip lefts rights
   where pc (l, r) = l ++ "|" ++ r
 
 addBufferToLayout :: Layout -> Int -> String -> Layout
-addBufferToLayout EmptyLayout id name = Win (Window id name (0, 0))
-addBufferToLayout layout id name = VStack layout (Win (Window id name (0, 0)))
+addBufferToLayout EmptyLayout id name = Win (Window id name 0 (0, 0))
+addBufferToLayout layout id name = VStack layout (Win (Window id name 0 (0, 0)))

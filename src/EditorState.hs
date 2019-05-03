@@ -22,7 +22,7 @@ import Util
 initEditorState = EditorState
   { buffers = M.fromList [("scratch", Buffer "hi\n")]
   , screenDim = Nothing
-  , layout = Win (Window 0 "scratch" (0, 0))
+  , layout = Win (Window 0 "scratch" 0 (0, 0))
   , currentWindowId  = 0
   , nextWindowId = 1
   , debugStr = "debug"

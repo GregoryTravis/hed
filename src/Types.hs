@@ -21,7 +21,7 @@ data EditorState = EditorState
   }
   deriving (Eq, Show)
 
-data Window = Window Int String (Int, Int)
+data Window = Window Int String Int (Int, Int)
   deriving (Eq, Show)
 
 data Buffer = Buffer { bufferContents :: String }
