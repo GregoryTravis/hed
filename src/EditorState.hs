@@ -1,6 +1,7 @@
 module EditorState
 ( initEditorState
 --, newFileBuffer
+, esaction
 , openFile
 , newWindow
 , switchToWindow
@@ -27,9 +28,9 @@ initEditorState = EditorState
   , debugStr = "debug"
   }
 
---transformEditorState f = do
-  --es <- get
-  --put (f es)
+esaction f = do
+  es <- get
+  put (f es)
 
 addBuffer es name buf = es { buffers = M.insert name buf (buffers es) }
 
@@ -52,20 +53,17 @@ openFile filename = do
   newFileBuffer filename
   newWindow filename
 
-switchToWindow :: Int -> ESAction ()
-switchToWindow windowId = do
-  es <- get
+switchToWindow :: EditorState -> Int -> EditorState
+switchToWindow es windowId =
   let es' = es { currentWindowId = windowId }
-  let ok = hasWindow (layout es) windowId
-  put $ assertM "no such window" ok es'
+      ok = hasWindow (layout es) windowId
+   in assertM "no such window" ok es'
 
-nextWindow :: ESAction ()
-nextWindow = do
-  es <- get
+nextWindow es =
   let wids = getWindowIds (layout es)
       current = currentWindowId es
       nextWindowId = fromJust $ valueAfterCyclic wids current
-  switchToWindow nextWindowId
+   in switchToWindow es nextWindowId
 
 getCursorPos :: EditorState -> Int -> (Int, Int)
 getCursorPos es windowId =
