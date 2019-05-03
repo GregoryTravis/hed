@@ -15,6 +15,7 @@ import Control
 import EditorState
 import Layout
 import State
+import Types
 import Util
 
 redisplay :: ESAction ()
@@ -38,7 +39,9 @@ redisplay = do
           where ok = (length s == h) && (all (w==) (map length s))
 
 moveCursorToCurrentWindow es = do
-  case getCursorPos es (currentWindowId es) of (w, h) -> setCursorPosition h w
+  case getCursorPos es (currentWindowId es) of (x, y) -> setCursorPosition (y + dy) (x + dx)
+  where buf = case getWindow (layout es) (currentWindowId es) of Window _ name _ _ -> buffers es M.! name
+        (dx, dy) = getCursorRelativeOffset buf 20
 showDebugStr :: EditorState -> IO ()
 showDebugStr es = do
   setCursorPosition 0 8

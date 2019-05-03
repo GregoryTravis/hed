@@ -4,6 +4,7 @@ module Layout
 , addBufferToLayout
 , getWindows
 , getWindowIds
+, getWindow
 , hasWindow
 , getWindowPlacement
 ) where
@@ -54,6 +55,9 @@ getWindows (HStack left right) = (getWindows left) ++ (getWindows right)
 getWindows EmptyLayout = []
 
 getWindowIds layout = map getId (getWindows layout)
+  where getId (Window id _ _ _) = id
+
+getWindow layout windowId = fromJust $ find (\w -> getId w == windowId) (getWindows layout)
   where getId (Window id _ _ _) = id
 
 hasWindow layout windowId = elem windowId (getWindowIds layout)

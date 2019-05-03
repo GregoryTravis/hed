@@ -2,6 +2,7 @@ module Buffer
 ( Buffer(..)
 , renderBuffer
 , appendToBuffer
+, getCursorRelativeOffset
 ) where
 
 import Data.List.Split
@@ -21,3 +22,9 @@ renderBuffer buf (x, y) (w, h) = assertM "offset" ok hPaddedLines
 
 appendToBuffer :: Buffer -> String -> Buffer
 appendToBuffer buf s = buf { bufferContents = bufferContents buf ++ s }
+
+getCursorRelativeOffset :: Buffer -> Int -> (Int, Int)
+getCursorRelativeOffset (Buffer { bufferContents = s }) cursorPos = (x, y)
+  where ss = splitOn "\n" (take cursorPos s)
+        y = length ss - 1
+        x = length (last ss)
