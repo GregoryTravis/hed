@@ -34,7 +34,7 @@ getWindowPlacement (EditorState { screenDim = dim, layout = layout }) windowId =
   where withId anId (WindowPlacement (Window id _ _) _ _) = anId == id
 
 --renderLayout :: EditorState -> Layout -> (Int, Int) -> [String]
-renderLayout es (Win (Window _ bufferName offset)) dim = renderBuffer (buffers es M.! bufferName) offset dim
+renderLayout es (Win (Window _ bufferName origin)) dim = renderBuffer (buffers es M.! bufferName) origin dim
 renderLayout es (VStack top bottom) (w, h) = vConcat w topR bottomR
   where topR = renderLayout es top (w, topH)
         bottomR = renderLayout es bottom (w, bottomH)
