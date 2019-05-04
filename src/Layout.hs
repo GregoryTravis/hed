@@ -7,6 +7,7 @@ module Layout
 , getWindow
 , hasWindow
 , getWindowPlacement
+, replaceWindow
 ) where
 
 import Data.List (find)
@@ -15,6 +16,7 @@ import qualified Data.Map as M
 
 import Buffer
 import Types
+import Util
 
 getWindowArrangement :: Layout -> (Int, Int) -> (Int, Int) -> [WindowPlacement]
 getWindowArrangement (Win win) pos dim = [WindowPlacement win pos dim]
@@ -61,6 +63,17 @@ getWindow layout windowId = fromJust $ find (\w -> getId w == windowId) (getWind
   where getId (Window id _ _ _) = id
 
 hasWindow layout windowId = elem windowId (getWindowIds layout)
+
+replaceWindow :: Layout -> Window -> Layout
+replaceWindow layout w@(Window id _ _ _) =
+  let ok = hasWindow layout id
+      layout' = replaceWindow' layout w
+   in assertM "" ok layout'
+  where replaceWindow' ww@(Win (Window id' _ _ _)) w@(Window id _ _ _) | id == id' = (Win w)
+                                                                       | otherwise = ww
+        replaceWindow' (VStack t b) w = VStack (replaceWindow' t w) (replaceWindow' b w)
+        replaceWindow' (HStack l r) w = HStack (replaceWindow' l w) (replaceWindow' r w)
+        replaceWindow' EmptyLayout _ = EmptyLayout
 
 vConcat width top bottom = top <> [(take width (repeat '-'))] <> bottom
 hConcat lefts rights = map pc $ zip lefts rights

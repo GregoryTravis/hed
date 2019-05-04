@@ -21,6 +21,7 @@ data EditorState = EditorState
   }
   deriving (Eq, Show)
 
+-- id, name, cursorPos, origin
 data Window = Window Int String Int (Int, Int)
   deriving (Eq, Show)
 

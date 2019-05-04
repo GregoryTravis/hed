@@ -39,9 +39,12 @@ redisplay = do
           where ok = (length s == h) && (all (w==) (map length s))
 
 moveCursorToCurrentWindow es = do
-  case getCursorPos es (currentWindowId es) of (x, y) -> setCursorPosition (y + dy) (x + dx)
-  where buf = case getWindow (layout es) (currentWindowId es) of Window _ name _ _ -> buffers es M.! name
-        (dx, dy) = getCursorRelativeOffset buf 20
+  let Window _ name cursorPos _ = getWindow (layout es) (currentWindowId es)
+      (x, y) = getCursorPos es (currentWindowId es)
+      buf = buffers es M.! name
+      (dx, dy) = getCursorRelativeOffset buf cursorPos
+   in setCursorPosition (y + dy) (x + dx)
+
 showDebugStr :: EditorState -> IO ()
 showDebugStr es = do
   setCursorPosition 0 8

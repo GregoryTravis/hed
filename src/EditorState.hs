@@ -7,6 +7,7 @@ module EditorState
 , switchToWindow
 , nextWindow
 , getCursorPos
+, moveCursor
 ) where
 
 import Control.Monad.State
@@ -68,3 +69,14 @@ nextWindow es =
 getCursorPos :: EditorState -> Int -> (Int, Int)
 getCursorPos es windowId =
   case getWindowPlacement es windowId of (WindowPlacement win pos dim) -> pos
+
+moveCursor :: EditorState -> Int -> EditorState
+moveCursor es delta = es { layout = layout' }
+  where layout' = replaceWindow (layout es) window'
+        Window id name cursorPos origin = getWindow (layout es) (currentWindowId es)
+        window' = Window id name (fix (cursorPos + delta)) origin
+        buffer = (buffers es) M.! name
+        bufferLen = length (bufferContents buffer)
+        fix x | x < 0 = 0
+              | x >= bufferLen - 1 = bufferLen - 1
+              | otherwise = x

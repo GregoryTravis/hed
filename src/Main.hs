@@ -28,6 +28,10 @@ inputReader chan = forever $ do
 transformEditorState :: EditorState -> Event -> ESAction EditorState
 transformEditorState es (KeyEvent ' ') = do
   return es { debugStr = show (getCursorPos es (currentWindowId es)) }
+transformEditorState es (KeyEvent 'h') = do
+  return $ moveCursor es (-1)
+transformEditorState es (KeyEvent 'l') = do
+  return $ moveCursor es 1
 transformEditorState es (KeyEvent 'n') = return $ nextWindow es
 transformEditorState es (KeyEvent c) = return $ es { buffers = updated, debugStr = "key " ++ [c] }
   where updated = buffers es
