@@ -8,10 +8,12 @@ module EditorState
 , nextWindow
 , getCursorPos
 , moveCursor
+, moveCursorVertically
 ) where
 
 import Control.Monad.State
 import qualified Data.Map as M
+import Data.List.Split
 import Data.Maybe
 
 import Buffer
@@ -71,12 +73,22 @@ getCursorPos es windowId =
   case getWindowPlacement es windowId of (WindowPlacement win pos dim) -> pos
 
 moveCursor :: EditorState -> Int -> EditorState
-moveCursor es delta = es { layout = layout' }
+moveCursor es dw = es { layout = layout' }
   where layout' = replaceWindow (layout es) window'
         Window id name cursorPos origin = getWindow (layout es) (currentWindowId es)
-        window' = Window id name (fix (cursorPos + delta)) origin
+        window' = Window id name (fix (cursorPos + dw)) origin
         buffer = (buffers es) M.! name
         bufferLen = length (bufferContents buffer)
         fix x | x < 0 = 0
               | x >= bufferLen - 1 = bufferLen - 1
               | otherwise = x
+
+moveCursorVertically :: EditorState -> Int -> EditorState
+moveCursorVertically es dy =
+  let lines = splitOn "\n" $ bufferContents currentBuffer
+      currentBuffer = (buffers es) M.! name
+      (Window id name cursorPos origin) = getWindow (layout es) (currentWindowId es)
+      (x, y) = textCursorPosToXY currentBuffer cursorPos
+      cursorPos' = textXYToCursorPos currentBuffer (x, y + dy)
+      window' = Window id name cursorPos' origin
+   in es { layout = replaceWindow (layout es) window' }
