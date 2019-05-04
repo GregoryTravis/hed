@@ -91,4 +91,5 @@ moveCursorVertically es dy =
       (x, y) = textCursorPosToXY currentBuffer cursorPos
       cursorPos' = textXYToCursorPos currentBuffer (x, y + dy)
       window' = Window id name cursorPos' origin
-   in es { layout = replaceWindow (layout es) window' }
+   in es { layout = replaceWindow (layout es) window'
+         , debugStr = show ((x, y), cursorPos, cursorPos') }

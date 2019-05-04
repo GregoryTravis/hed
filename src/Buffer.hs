@@ -49,10 +49,11 @@ textXYToCursorPos buffer (x, y) =
       voo :: [String]
       voo = take 2 lines
       yeah :: Int -> Int -> Int
+      aboveLen = length (concat (take y lines)) + y
       yeah x y | x < 0 || y < 0 = 0
                | y >= (length lines) = bufferLen - 1
-               | x > lineLen = length (concat (take y lines)) + lineLen
-               | otherwise = length (concat (take y lines)) + x
+               | x > lineLen = aboveLen + lineLen
+               | otherwise = aboveLen + x
       lineLen = length $ (lines !! y)
       bufferLen = length $ bufferContents buffer
    in yeah x y

@@ -27,7 +27,7 @@ redisplay = do
     case screenDim s of Nothing -> msp "Can't determine screen dimensions"
                         Just dim -> withStdoutBuffering (BlockBuffering Nothing) $ do 
                                       setCursorPosition 0 0
-                                      clearScreen
+                                      --clearScreen
                                       --msp $ map length (renderLayout s (layout s) dim)
                                       putStr $ mconcat $ checkSize (renderLayout s (layout s) dim) dim
                                       showDebugStr s
