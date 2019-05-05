@@ -125,7 +125,7 @@ getWindowUL es windowId =
   case getWindowPlacement es windowId of (WindowPlacement win pos dim) -> pos
 
 getAbsoluteCusorPos es = do
-  let Window _ name cursorPos _ = getWindow (layout es) (currentWindowId es)
+  let Window _ name cursorPos (ox, oy) = getWindow (layout es) (currentWindowId es)
       (x, y) = getWindowUL es (currentWindowId es)
       (dx, dy) = textCursorPosToXY es (currentWindowId es) cursorPos
-   in (x + dx, y + dy)
+   in (x + dx - ox, y + dy - oy)
