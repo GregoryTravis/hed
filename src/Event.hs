@@ -6,5 +6,9 @@ data Event =
   GotWindowSizeEvent (Int, Int) |
   RedisplayEvent Char |
   QuitEvent |
-  StateChangedEvent
-  deriving (Show)
+  StateChangedEvent |
+  RequestTransform String (String -> String)
+
+instance Show Event where
+  show (RequestTransform s f) = "(RequestTransform " ++ s ++ ")"
+  --show 

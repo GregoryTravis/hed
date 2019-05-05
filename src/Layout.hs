@@ -8,6 +8,7 @@ module Layout
 , hasWindow
 , getWindowPlacement
 , replaceWindow
+, replaceBuffer
 , textCursorPosToXY
 , textXYToCursorPos
 , getWindowUL

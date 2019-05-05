@@ -64,6 +64,11 @@ noSuchKey c = do
 handleEvent :: Event -> ESAction ()
 handleEvent (KeyEvent c) = executeKey c
 handleEvent (GotWindowSizeEvent dim) = asAction $ \es -> es { screenDim = Just dim }
+handleEvent (RequestTransform bufferName f) = asAction $ \es ->
+  let buf = buffers es M.! bufferName
+      newBuf = buf { bufferContents = newContents }
+      newContents = f (bufferContents buf)
+   in replaceBuffer es bufferName newBuf
 
 updateEditorState :: Chan Event -> Event -> ESAction ()
 updateEditorState chan event = do
@@ -96,6 +101,7 @@ eventLoop eventChan = forever $ do
                 KeyEvent 'q' -> io $ writeChan eventChan QuitEvent
                 --KeyEvent c -> io $ msp ("key", c)
                 KeyEvent c -> updateEditorState eventChan (KeyEvent c)
+                e@(RequestTransform _ _) -> updateEditorState eventChan e
                 StateChangedEvent -> redisplay
 
 saveCurrentBuffer = do
@@ -103,12 +109,13 @@ saveCurrentBuffer = do
   let (name, Buffer { bufferContents = contents }) = currentBufAndNAme es
   io $ saveFile name contents
 
+gol = reverse
+
 main :: IO ()
 main = stateMain initEditorState $ do
   openFile "uni.txt"
   openFile "inu.txt"
   openFile "gol.txt"
-  --attachProcess "gol.txt" gol
   --newWindow "uni.txt"
   --switchToWindow 2
   esaction nextWindow
@@ -119,6 +126,9 @@ main = stateMain initEditorState $ do
     --msp "Hed start"
 
   eventChan <- io $ (newChan :: IO (Chan Event))
+
+  io $ attachProcess "gol.txt" eventChan gol
+  --
   --io $ do
   let wri = withRawInput 0 1
       wbt = withBackgroundThread (inputReader eventChan)
