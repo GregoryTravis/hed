@@ -15,6 +15,7 @@ import Control
 import Display
 import EditorState
 import Event
+import Layout
 import SizeReport
 import State
 import Util

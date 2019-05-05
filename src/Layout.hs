@@ -10,6 +10,8 @@ module Layout
 , replaceWindow
 , textCursorPosToXY
 , textXYToCursorPos
+, getWindowUL
+, getAbsoluteCusorPos
 ) where
 
 import Data.List (find)
@@ -117,3 +119,13 @@ textXYToCursorPos es windowId (x, y) =
       lineLen = length $ (lines !! y)
       bufferLen = length $ bufferContents buffer
    in yeah x y
+
+getWindowUL :: EditorState -> Int -> (Int, Int)
+getWindowUL es windowId =
+  case getWindowPlacement es windowId of (WindowPlacement win pos dim) -> pos
+
+getAbsoluteCusorPos es = do
+  let Window _ name cursorPos _ = getWindow (layout es) (currentWindowId es)
+      (x, y) = getWindowUL es (currentWindowId es)
+      (dx, dy) = textCursorPosToXY es (currentWindowId es) cursorPos
+   in (x + dx, y + dy)

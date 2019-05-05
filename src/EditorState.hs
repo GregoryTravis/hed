@@ -6,7 +6,6 @@ module EditorState
 , newWindow
 , switchToWindow
 , nextWindow
-, getWindowUL
 , moveCursor
 , moveCursorVertically
 ) where
@@ -67,10 +66,6 @@ nextWindow es =
       current = currentWindowId es
       nextWindowId = fromJust $ valueAfterCyclic wids current
    in switchToWindow es nextWindowId
-
-getWindowUL :: EditorState -> Int -> (Int, Int)
-getWindowUL es windowId =
-  case getWindowPlacement es windowId of (WindowPlacement win pos dim) -> pos
 
 moveCursor :: EditorState -> Int -> EditorState
 moveCursor es dw = es { layout = layout', debugStr = deb }
