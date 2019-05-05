@@ -16,6 +16,7 @@ import Control
 import Display
 import EditorState
 import Event
+import GOL
 import Layout
 import Process
 import SizeReport
@@ -108,8 +109,6 @@ saveCurrentBuffer = do
   es <- get
   let (name, Buffer { bufferContents = contents }) = currentBufAndNAme es
   io $ saveFile name contents
-
-gol = reverse
 
 main :: IO ()
 main = stateMain initEditorState $ do
