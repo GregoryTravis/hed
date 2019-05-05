@@ -10,11 +10,11 @@ import Event
 import Util
 import Types
 
-attachProcess :: String -> Chan Event -> (String -> String) -> IO ()
-attachProcess bufferName chan contentsTransformer = do
+attachProcess :: String -> Chan Event -> (String -> String) -> Double -> IO ()
+attachProcess bufferName chan contentsTransformer speed = do
   let loop :: IO ()
       loop = do
-        threadDelay 250000
+        threadDelay $ floor (1000000.0 / speed)
         writeChan chan $ RequestTransform bufferName contentsTransformer
         loop
   forkIO loop

@@ -113,8 +113,8 @@ saveCurrentBuffer = do
 main :: IO ()
 main = stateMain initEditorState $ do
   openFile "uni.txt"
-  openFile "inu.txt"
   openFile "gol.txt"
+  openFile "rpent.txt"
   --newWindow "uni.txt"
   --switchToWindow 2
   esaction nextWindow
@@ -126,7 +126,8 @@ main = stateMain initEditorState $ do
 
   eventChan <- io $ (newChan :: IO (Chan Event))
 
-  io $ attachProcess "gol.txt" eventChan gol
+  io $ attachProcess "gol.txt" eventChan gol 1.0
+  io $ attachProcess "rpent.txt" eventChan gol 10.0
   --
   --io $ do
   let wri = withRawInput 0 1
