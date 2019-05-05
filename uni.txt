@@ -1,9 +1,9 @@
-Original by Markus Kuhn, adapted for HTML by Martin Dürst.
+Original by Markus Kuhn, adapted for HTML by Martin DürstOriginal by Markus Kuhn, adapted for HTML by Martin Dürst..Original by Markus Kuhn, adapted for HTML by Martin Dürst.
 
-UTF-8 encoded sample plain-text file
+UTF-8 encoded sample plain-text filUTF-8 encoded sample plain-text filUTF-8 encoded sample plain-text filUTF-8 encoded sample plain-text fileeeeUTF-8 encoded sample plain-text file
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 
-Markus Kuhn [ˈmaʳkʊs kuːn] <mkuhn@acm.org> — 1999-08-20
+Markus Kuhn [ˈmaʳkʊs kuːn] <mkuhn@acm.org> — 1999-08-2Markus Kuhn [ˈmaʳkʊs kuːn] <mkuhn@acm.org> — 1999-08-2Markus Kuhn [ˈmaʳkʊs kuːn] <mkuhn@acm.org> — 1999-08-2000Markus Kuhn [ˈmaʳkʊs kuːn] <mkuhn@acm.org> — 1999-08-20
 
 
 The ASCII compatible UTF-8 encoding of ISO 10646 and Unicode
