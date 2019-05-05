@@ -67,10 +67,10 @@ nextWindow es =
    in switchToWindow es nextWindowId
 
 -- Scroll window so that cursor is inside the visible area
-moveOriginToShowCursor es x y =
+moveOriginToShowCursor es newCursorPos x y =
   let WindowPlacement win pos (w, h) = getWindowPlacement es (currentWindowId es)
       Window id name cursorPos (ox, oy) = getWindow (layout es) (currentWindowId es)
-      (x, y) = textCursorPosToXY es (currentWindowId es) cursorPos
+      (x, y) = textCursorPosToXY es (currentWindowId es) newCursorPos
       nox | x < ox = x
           | x-ox >= w = ox - ((x-ox)-w-1)
           | otherwise = ox
@@ -86,7 +86,8 @@ moveCursor es dx dy =
       (Window id name cursorPos origin) = getWindow (layout es) (currentWindowId es)
       (x, y) = textCursorPosToXY es (currentWindowId es) cursorPos
       cursorPos' = textXYToCursorPos es (currentWindowId es) (x + dx, y + dy)
+      (nx, ny) = textCursorPosToXY es (currentWindowId es) cursorPos'
       window' = Window id name cursorPos' origin'
-      origin' = moveOriginToShowCursor es x y
+      origin' = moveOriginToShowCursor es cursorPos' nx ny
    in es { layout = replaceWindow (layout es) window'
-         , debugStr = show ((x, y), cursorPos, cursorPos') }
+         , debugStr = show ((x, y), (x+dx, y+dy), (nx, ny), origin, origin', cursorPos, cursorPos') }
