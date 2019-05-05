@@ -64,7 +64,7 @@ eventLoop eventChan = forever $ do
                 QuitEvent -> do es <- get
                                 io $ do msp "exiting"
                                         clearScreen
-                                        setCursorPosition 0 0
+                                        setCursorPos (0, 0)
                                         msp es
                                         exitSuccess
                 --GotWindowSizeEvent (w, h) -> io $ msp ("WSE", w, h)

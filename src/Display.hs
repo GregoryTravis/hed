@@ -1,7 +1,7 @@
 module Display
 ( redisplay
 , clearScreen
-, setCursorPosition
+, setCursorPos
 ) where
 
 import Control.Monad.State
@@ -18,20 +18,21 @@ import State
 import Types
 import Util
 
+setCursorPos (x, y) = setCursorPosition y x
+
 redisplay :: ESAction ()
 redisplay = do
   s <- get
   io $ do
     --clearScreen
-    setCursorPosition 0 0
+    --setCursorPosition 0 0
     case screenDim s of Nothing -> msp "Can't determine screen dimensions"
                         Just dim -> withStdoutBuffering (BlockBuffering Nothing) $ do 
-                                      setCursorPosition 0 0
+                                      setCursorPos (0, 0)
                                       --clearScreen
                                       --msp $ map length (renderLayout s (layout s) dim)
                                       putStr $ mconcat $ checkSize (renderLayout s (layout s) dim) dim
                                       showDebugStr s
-                                      --setCursorPosition 0 0
                                       moveCursorToCurrentWindow s
                                       hFlush stdout
   where checkSize :: [String] -> (Int, Int) -> [String]
@@ -42,7 +43,7 @@ moveCursorToCurrentWindow es = do
   let Window _ name cursorPos _ = getWindow (layout es) (currentWindowId es)
       (x, y) = getWindowUL es (currentWindowId es)
       (dx, dy) = textCursorPosToXY es (currentWindowId es) cursorPos
-   in setCursorPosition (y + dy) (x + dx)
+   in setCursorPos(x + dx, y + dy)
 
 showDebugStr :: EditorState -> IO ()
 showDebugStr es = do
