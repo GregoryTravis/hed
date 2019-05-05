@@ -12,6 +12,7 @@ module Layout
 , textXYToCursorPos
 , getWindowUL
 , getAbsoluteCusorPos
+, insertChar
 ) where
 
 import Data.List (find)
@@ -83,6 +84,9 @@ replaceWindow layout w@(Window id _ _ _) =
         replaceWindow' (HStack l r) w = HStack (replaceWindow' l w) (replaceWindow' r w)
         replaceWindow' EmptyLayout _ = EmptyLayout
 
+replaceBuffer es name newBuf = 
+  es { buffers = M.insert name newBuf (buffers es) }
+
 vConcat width top bottom = top <> [(take width (repeat '-'))] <> bottom
 hConcat lefts rights = map pc $ zip lefts rights
   where pc (l, r) = l ++ "|" ++ r
@@ -129,3 +133,14 @@ getAbsoluteCusorPos es = do
       (x, y) = getWindowUL es (currentWindowId es)
       (dx, dy) = textCursorPosToXY es (currentWindowId es) cursorPos
    in (x + dx - ox, y + dy - oy)
+
+currentBuf es = buffers es M.! name
+  where Window _ name _ _ = currentWindow es
+
+currentWindow es = getWindow (layout es) (currentWindowId es)
+
+insertChar :: EditorState -> Char -> EditorState
+insertChar es c =
+  let buf = currentBuf es
+      Window _ name cursorPos _ = currentWindow es
+   in replaceBuffer es name $ insertCharAt buf cursorPos c

@@ -2,6 +2,7 @@ module Buffer
 ( Buffer(..)
 , renderBuffer
 , appendToBuffer
+, insertCharAt
 ) where
 
 import Data.List.Split
@@ -21,3 +22,8 @@ renderBuffer buf (ox, oy) (w, h) = assertM "offset" ok hPaddedLines
 
 appendToBuffer :: Buffer -> String -> Buffer
 appendToBuffer buf s = buf { bufferContents = bufferContents buf ++ s }
+
+insertCharAt buf cursorPos c = buf { bufferContents = newContents }
+  where newContents = prefix ++ [c] ++ suffix
+        prefix = take cursorPos $ bufferContents buf
+        suffix = drop cursorPos $ bufferContents buf

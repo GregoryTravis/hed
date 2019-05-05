@@ -38,6 +38,8 @@ transformEditorState es (KeyEvent 'k') = do
 transformEditorState es (KeyEvent 'j') = do
   return $ moveCursor es 0 1
 transformEditorState es (KeyEvent 'n') = return $ nextWindow es
+transformEditorState es (KeyEvent 'z') = do
+  return $ moveCursor (insertChar es 'z') 1 0
 transformEditorState es (KeyEvent c) = return $ es { buffers = updated, debugStr = "key " ++ [c] }
   where updated = buffers es
   --where updated = M.insert (currentBuffer es) (makeCharBuffer c) (buffers es)
