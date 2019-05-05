@@ -10,7 +10,28 @@ type Grid = V.Vector (V.Vector Bool)
 gol :: String -> String
 gol = gridToString . gol' . stringToGrid
 gol' :: Grid -> Grid
-gol' g = V.map (V.map not) g
+gol' g = gridMap g huh
+  where huh :: (Int, Int) -> Bool
+        huh (x, y) = rule numLive
+          where 
+            numLive :: Int
+            numLive = length $ filter id around
+            around :: [Bool]
+            around = map (sampleDelta g) pointsAround
+            sampleDelta :: Grid -> (Int, Int) -> Bool
+            sampleDelta g (dx, dy) = sample g (x+dx, y+dy)
+            rule :: Int -> Bool
+            rule n | n == 3 = True
+                   | n == 2 = sample g (x, y)
+                   | otherwise = False
+
+-- Any live cell with fewer than two live neighbours dies (referred to as underpopulation or exposure[1]).
+-- Any live cell with more than three live neighbours dies (referred to as overpopulation or overcrowding).
+-- Any live cell with two or three live neighbours lives, unchanged, to the next generation.
+-- Any dead cell with exactly three live neighbours will come to life.
+
+pointsAround :: [(Int, Int)]
+pointsAround = [(x, y) | x <- [-1..1], y <- [-1..1], x /= y]
 
 charToBool '.' = False
 charToBool 'o' = True
