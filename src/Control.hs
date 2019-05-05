@@ -21,6 +21,7 @@ import System.Posix.Signals.Exts
 import System.Posix.Terminal
 
 import State
+import Types
 import Util
 
 stateMain :: t -> StateT t IO () -> IO ()

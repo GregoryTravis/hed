@@ -1,15 +1,20 @@
 module Types
 ( Layout(..)
+, ESAction
 , EditorState(..)
 , Buffer(..)
 , Window(..)
 , WindowPlacement(..)
+, KeyBinding(..)
 ) where
 
+import Control.Monad.State
 import qualified Data.Map as M
 
 data Layout = Win Window | HStack Layout Layout | VStack Layout Layout | EmptyLayout
   deriving (Eq, Show)
+
+type ESAction a = StateT EditorState IO a
 
 data EditorState = EditorState
   { buffers :: M.Map String Buffer
@@ -33,3 +38,5 @@ instance Show Buffer where
 
 data WindowPlacement = WindowPlacement Window (Int, Int) (Int, Int)
   deriving (Eq, Show)
+
+data KeyBinding = TransformBinding (EditorState -> EditorState) | ActionBinding (ESAction ())

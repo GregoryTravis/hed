@@ -1,14 +1,17 @@
 module State
 ( EditorState(..)
-, ESAction
 , io
+, asAction
 ) where
 
 import Control.Monad.State
 
 import Types
 
-type ESAction a = StateT EditorState IO a
-
 io :: IO a -> StateT t IO a
 io = liftIO
+
+asAction :: (EditorState -> EditorState) -> ESAction ()
+asAction f = do
+  es <- get
+  put $ f es
