@@ -7,7 +7,6 @@ module EditorState
 , switchToWindow
 , nextWindow
 , moveCursor
-, moveCursorVertically
 ) where
 
 import Control.Monad.State
@@ -67,26 +66,13 @@ nextWindow es =
       nextWindowId = fromJust $ valueAfterCyclic wids current
    in switchToWindow es nextWindowId
 
-moveCursor :: EditorState -> Int -> EditorState
-moveCursor es dw = es { layout = layout', debugStr = deb }
-  where layout' = replaceWindow (layout es) window'
-        Window id name cursorPos origin = getWindow (layout es) (currentWindowId es)
-        window' = Window id name (fix cursorPos') origin
-        buffer = (buffers es) M.! name
-        bufferLen = length (bufferContents buffer)
-        cursorPos' = cursorPos + dw
-        deb = show (cursorPos, cursorPos')
-        fix x | x < 0 = 0
-              | x >= bufferLen - 1 = bufferLen - 1
-              | otherwise = x
-
-moveCursorVertically :: EditorState -> Int -> EditorState
-moveCursorVertically es dy =
+moveCursor :: EditorState -> Int -> Int -> EditorState
+moveCursor es dx dy =
   let lines = splitOn "\n" $ bufferContents currentBuffer
       currentBuffer = (buffers es) M.! name
       (Window id name cursorPos origin) = getWindow (layout es) (currentWindowId es)
       (x, y) = textCursorPosToXY es (currentWindowId es) cursorPos
-      cursorPos' = textXYToCursorPos es (currentWindowId es) (x, y + dy)
+      cursorPos' = textXYToCursorPos es (currentWindowId es) (x + dx, y + dy)
       window' = Window id name cursorPos' origin
    in es { layout = replaceWindow (layout es) window'
          , debugStr = show ((x, y), cursorPos, cursorPos') }

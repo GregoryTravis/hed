@@ -30,13 +30,13 @@ transformEditorState :: EditorState -> Event -> ESAction EditorState
 transformEditorState es (KeyEvent ' ') = do
   return es { debugStr = show (getWindowUL es (currentWindowId es)) }
 transformEditorState es (KeyEvent 'h') = do
-  return $ moveCursor es (-1)
+  return $ moveCursor es (-1) 0
 transformEditorState es (KeyEvent 'l') = do
-  return $ moveCursor es 1
+  return $ moveCursor es 1 0
 transformEditorState es (KeyEvent 'k') = do
-  return $ moveCursorVertically es (-1)
+  return $ moveCursor es 0 (-1)
 transformEditorState es (KeyEvent 'j') = do
-  return $ moveCursorVertically es 1
+  return $ moveCursor es 0 1
 transformEditorState es (KeyEvent 'n') = return $ nextWindow es
 transformEditorState es (KeyEvent c) = return $ es { buffers = updated, debugStr = "key " ++ [c] }
   where updated = buffers es
