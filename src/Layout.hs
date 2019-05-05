@@ -8,11 +8,14 @@ module Layout
 , hasWindow
 , getWindowPlacement
 , replaceWindow
+, textCursorPosToXY
+, textXYToCursorPos
 ) where
 
 import Data.List (find)
-import Data.Maybe
+import Data.List.Split
 import qualified Data.Map as M
+import Data.Maybe
 
 import Buffer
 import Types
@@ -62,6 +65,9 @@ getWindowIds layout = map getId (getWindows layout)
 getWindow layout windowId = fromJust $ find (\w -> getId w == windowId) (getWindows layout)
   where getId (Window id _ _ _) = id
 
+getWindowBuffer es windowId =
+  case getWindow (layout es) windowId of Window _ name _ _ -> buffers es M.! name
+
 hasWindow layout windowId = elem windowId (getWindowIds layout)
 
 replaceWindow :: Layout -> Window -> Layout
@@ -82,3 +88,32 @@ hConcat lefts rights = map pc $ zip lefts rights
 addBufferToLayout :: Layout -> Int -> String -> Layout
 addBufferToLayout EmptyLayout id name = Win (Window id name 0 (0, 0))
 addBufferToLayout layout id name = VStack layout (Win (Window id name 66 (0, 0)))
+
+-- Turn 2d position of a 1d cursor position
+textCursorPosToXY :: EditorState -> Int -> Int -> (Int, Int)
+textCursorPosToXY es windowId cursorPos =
+  let buffer = getWindowBuffer es windowId
+      lines = splitOn "\n" $ take cursorPos $ bufferContents buffer
+      y = length lines - 1
+      x = length (lines !! y)
+   in (x, y)
+
+-- Turn a 2d position to a 1d cursor position.  If the 2d position falls in
+-- empty space then move it back to the end of its line; if it is beyond the
+-- end of the buffer then put it at the end
+textXYToCursorPos :: EditorState -> Int -> (Int, Int) -> Int
+textXYToCursorPos es windowId (x, y) =
+  let buffer = getWindowBuffer es windowId
+      lines :: [String]
+      lines = splitOn "\n" $ bufferContents buffer
+      voo :: [String]
+      voo = take 2 lines
+      yeah :: Int -> Int -> Int
+      aboveLen = length (concat (take y lines)) + y
+      yeah x y | x < 0 || y < 0 = 0
+               | y >= (length lines) = bufferLen - 1
+               | x > lineLen = aboveLen + lineLen
+               | otherwise = aboveLen + x
+      lineLen = length $ (lines !! y)
+      bufferLen = length $ bufferContents buffer
+   in yeah x y
