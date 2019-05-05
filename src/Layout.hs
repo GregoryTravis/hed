@@ -13,6 +13,7 @@ module Layout
 , getWindowUL
 , getAbsoluteCusorPos
 , insertChar
+, deleteChar
 , currentBufAndNAme
 ) where
 
@@ -148,3 +149,9 @@ insertChar es c =
   let buf = currentBuf es
       Window _ name cursorPos _ = currentWindow es
    in replaceBuffer es name $ insertCharAt buf cursorPos c
+
+deleteChar :: EditorState -> EditorState
+deleteChar es =
+  let buf = currentBuf es
+      Window _ name cursorPos _ = currentWindow es
+   in replaceBuffer es name $ deleteCharAt buf cursorPos

@@ -6,6 +6,7 @@ import Control.Concurrent.Chan
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.State
+import Data.Char (ord)
 import qualified Data.Map as M
 import System.Exit
 import System.IO hiding (openFile)
@@ -40,10 +41,12 @@ transformEditorState es (KeyEvent 'j') = do
 transformEditorState es (KeyEvent 'n') = return $ nextWindow es
 transformEditorState es (KeyEvent 'z') = do
   return $ moveCursor (insertChar es 'z') 1 0
+transformEditorState es (KeyEvent '\o177') = do
+  return $ moveCursor (deleteChar es) (-1) 0
 transformEditorState es (KeyEvent 's') = do
   io $ saveCurrentBuffer es
   return es { debugStr = "saved" }
-transformEditorState es (KeyEvent c) = return $ es { buffers = updated, debugStr = "key " ++ [c] }
+transformEditorState es (KeyEvent c) = return $ es { buffers = updated, debugStr = "key " ++ [c] ++ " " ++ (show (ord c)) }
   where updated = buffers es
   --where updated = M.insert (currentBuffer es) (makeCharBuffer c) (buffers es)
 transformEditorState es (GotWindowSizeEvent dim) = return $ es { screenDim = Just dim }

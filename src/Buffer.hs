@@ -3,6 +3,7 @@ module Buffer
 , renderBuffer
 , appendToBuffer
 , insertCharAt
+, deleteCharAt
 ) where
 
 import Data.List.Split
@@ -26,4 +27,10 @@ appendToBuffer buf s = buf { bufferContents = bufferContents buf ++ s }
 insertCharAt buf cursorPos c = buf { bufferContents = newContents }
   where newContents = prefix ++ [c] ++ suffix
         prefix = take cursorPos $ bufferContents buf
+        suffix = drop cursorPos $ bufferContents buf
+
+deleteCharAt buf 0 = buf
+deleteCharAt buf cursorPos = buf { bufferContents = newContents }
+  where newContents = prefix ++ suffix
+        prefix = take (cursorPos-1) $ bufferContents buf
         suffix = drop cursorPos $ bufferContents buf
