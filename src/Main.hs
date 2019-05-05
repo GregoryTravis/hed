@@ -27,7 +27,7 @@ inputReader chan = forever $ do
 
 transformEditorState :: EditorState -> Event -> ESAction EditorState
 transformEditorState es (KeyEvent ' ') = do
-  return es { debugStr = show (getCursorPos es (currentWindowId es)) }
+  return es { debugStr = show (getWindowUL es (currentWindowId es)) }
 transformEditorState es (KeyEvent 'h') = do
   return $ moveCursor es (-1)
 transformEditorState es (KeyEvent 'l') = do
@@ -81,7 +81,7 @@ main = stateMain initEditorState $ do
   newWindow "uni.txt"
   --switchToWindow 2
   esaction nextWindow
-  shew "ho"
+  --shew "ho"
   io $ do
     hSetBuffering stdin NoBuffering
     hSetBuffering stdout NoBuffering

@@ -6,7 +6,7 @@ module EditorState
 , newWindow
 , switchToWindow
 , nextWindow
-, getCursorPos
+, getWindowUL
 , moveCursor
 , moveCursorVertically
 ) where
@@ -68,17 +68,19 @@ nextWindow es =
       nextWindowId = fromJust $ valueAfterCyclic wids current
    in switchToWindow es nextWindowId
 
-getCursorPos :: EditorState -> Int -> (Int, Int)
-getCursorPos es windowId =
+getWindowUL :: EditorState -> Int -> (Int, Int)
+getWindowUL es windowId =
   case getWindowPlacement es windowId of (WindowPlacement win pos dim) -> pos
 
 moveCursor :: EditorState -> Int -> EditorState
-moveCursor es dw = es { layout = layout' }
+moveCursor es dw = es { layout = layout', debugStr = deb }
   where layout' = replaceWindow (layout es) window'
         Window id name cursorPos origin = getWindow (layout es) (currentWindowId es)
-        window' = Window id name (fix (cursorPos + dw)) origin
+        window' = Window id name (fix cursorPos') origin
         buffer = (buffers es) M.! name
         bufferLen = length (bufferContents buffer)
+        cursorPos' = cursorPos + dw
+        deb = show (cursorPos, cursorPos')
         fix x | x < 0 = 0
               | x >= bufferLen - 1 = bufferLen - 1
               | otherwise = x

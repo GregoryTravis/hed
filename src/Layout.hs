@@ -81,4 +81,4 @@ hConcat lefts rights = map pc $ zip lefts rights
 
 addBufferToLayout :: Layout -> Int -> String -> Layout
 addBufferToLayout EmptyLayout id name = Win (Window id name 0 (0, 0))
-addBufferToLayout layout id name = VStack layout (Win (Window id name 0 (0, 0)))
+addBufferToLayout layout id name = VStack layout (Win (Window id name 66 (0, 0)))

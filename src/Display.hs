@@ -40,9 +40,9 @@ redisplay = do
 
 moveCursorToCurrentWindow es = do
   let Window _ name cursorPos _ = getWindow (layout es) (currentWindowId es)
-      (x, y) = getCursorPos es (currentWindowId es)
+      (x, y) = getWindowUL es (currentWindowId es)
       buf = buffers es M.! name
-      (dx, dy) = getCursorRelativeOffset buf cursorPos
+      (dx, dy) = textCursorPosToXY buf cursorPos
    in setCursorPosition (y + dy) (x + dx)
 
 showDebugStr :: EditorState -> IO ()
