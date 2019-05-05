@@ -37,7 +37,7 @@ getWindowArrangement (HStack left right) (x, y) (w, h) = leftA ++ rightA
         rightW = w - leftW - 1
 getWindowArrangement EmptyLayout pos dim = []
 
-getWindowPlacement :: EditorState -> Int-> WindowPlacement
+getWindowPlacement :: EditorState -> Int -> WindowPlacement
 getWindowPlacement (EditorState { screenDim = dim, layout = layout }) windowId = fromJust $ find (withId windowId) (getWindowArrangement layout (0, 0) (fromJust dim))
   where withId anId (WindowPlacement (Window id _ _ _) _ _) = anId == id
 

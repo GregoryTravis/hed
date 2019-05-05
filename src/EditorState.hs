@@ -66,6 +66,19 @@ nextWindow es =
       nextWindowId = fromJust $ valueAfterCyclic wids current
    in switchToWindow es nextWindowId
 
+-- Scroll window so that cursor is inside the visible area
+moveOriginToShowCursor es x y =
+  let WindowPlacement win pos (w, h) = getWindowPlacement es (currentWindowId es)
+      Window id name cursorPos (ox, oy) = getWindow (layout es) (currentWindowId es)
+      (x, y) = textCursorPosToXY es (currentWindowId es) cursorPos
+      nox | x < ox = x
+          | x-ox >= w = ox - ((x-ox)-w-1)
+          | otherwise = ox
+      noy | y < oy = y
+          | y-oy >= h = oy - ((y-oy)-h-1)
+          | otherwise = oy
+   in (nox, noy)
+
 moveCursor :: EditorState -> Int -> Int -> EditorState
 moveCursor es dx dy =
   let lines = splitOn "\n" $ bufferContents currentBuffer
@@ -73,6 +86,7 @@ moveCursor es dx dy =
       (Window id name cursorPos origin) = getWindow (layout es) (currentWindowId es)
       (x, y) = textCursorPosToXY es (currentWindowId es) cursorPos
       cursorPos' = textXYToCursorPos es (currentWindowId es) (x + dx, y + dy)
-      window' = Window id name cursorPos' origin
+      window' = Window id name cursorPos' origin'
+      origin' = moveOriginToShowCursor es x y
    in es { layout = replaceWindow (layout es) window'
          , debugStr = show ((x, y), cursorPos, cursorPos') }
