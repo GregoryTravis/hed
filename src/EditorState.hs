@@ -3,6 +3,7 @@ module EditorState
 --, newFileBuffer
 , esaction
 , openFile
+, saveFile
 , newWindow
 , switchToWindow
 , nextWindow
@@ -53,6 +54,8 @@ newFileBuffer filename = do
 openFile filename = do
   newFileBuffer filename
   newWindow filename
+
+saveFile filename contents = writeFile filename contents
 
 switchToWindow :: EditorState -> Int -> EditorState
 switchToWindow es windowId =

@@ -40,6 +40,9 @@ transformEditorState es (KeyEvent 'j') = do
 transformEditorState es (KeyEvent 'n') = return $ nextWindow es
 transformEditorState es (KeyEvent 'z') = do
   return $ moveCursor (insertChar es 'z') 1 0
+transformEditorState es (KeyEvent 's') = do
+  io $ saveCurrentBuffer es
+  return es { debugStr = "saved" }
 transformEditorState es (KeyEvent c) = return $ es { buffers = updated, debugStr = "key " ++ [c] }
   where updated = buffers es
   --where updated = M.insert (currentBuffer es) (makeCharBuffer c) (buffers es)
@@ -76,6 +79,10 @@ eventLoop eventChan = forever $ do
                 --KeyEvent c -> io $ msp ("key", c)
                 KeyEvent c -> updateEditorState eventChan (KeyEvent c)
                 StateChangedEvent -> redisplay
+
+saveCurrentBuffer es = do
+  let (name, Buffer { bufferContents = contents }) = currentBufAndNAme es
+  saveFile name contents
 
 main :: IO ()
 main = stateMain initEditorState $ do
