@@ -113,7 +113,7 @@ textXYToCursorPos es windowId (x, y) =
       yeah :: Int -> Int -> Int
       aboveLen = length (concat (take y lines)) + y
       yeah x y | x < 0 || y < 0 = 0
-               | y >= (length lines) = bufferLen - 1
+               | y >= (length lines) = bufferLen
                | x > lineLen = aboveLen + lineLen
                | otherwise = aboveLen + x
       lineLen = length $ (lines !! y)
