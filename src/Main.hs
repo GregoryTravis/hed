@@ -17,6 +17,7 @@ import Display
 import EditorState
 import Event
 import Layout
+import Process
 import SizeReport
 import State
 import Types
@@ -106,7 +107,9 @@ main :: IO ()
 main = stateMain initEditorState $ do
   openFile "uni.txt"
   openFile "inu.txt"
-  newWindow "uni.txt"
+  openFile "gol.txt"
+  --attachProcess "gol.txt" gol
+  --newWindow "uni.txt"
   --switchToWindow 2
   esaction nextWindow
   --shew "ho"
