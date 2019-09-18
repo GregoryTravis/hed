@@ -2,7 +2,7 @@ Hed; a text editor in Haskell
 ======
 Just another I'm-learning-haskell project.
 
-In this project I
+In this project I:
 * used curses
 * learned how to use monoids
 * made a monad stack
