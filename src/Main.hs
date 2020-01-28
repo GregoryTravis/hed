@@ -112,8 +112,8 @@ saveCurrentBuffer = do
   io $ saveFile name contents
 
 main :: IO ()
---main = speedTests
-main = stateMain initEditorState $ do
+main = speedTests
+_main = stateMain initEditorState $ do
   openFile "uni.txt"
   openFile "gol.txt"
   openFile "rpent.txt"

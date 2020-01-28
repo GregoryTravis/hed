@@ -90,8 +90,9 @@ speedTests = do
   Just (wid, ht) <- getTerminalSize
   t <- IO.readFile "uni.txt"
   let noSpaces = L.filter ('\n' /=) $ L.filter (' ' /=) $ T.unpack t
-  let fillScreenString i = take (wid * (ht-0) - 0) (drop i (cycle noSpaces))
-  let fillScreenText i = T.pack $ fillScreenString i
+      fillScreenString i = take (wid * (ht-0) - 0) (drop i (cycle noSpaces))
+      fillScreenText i = T.pack $ fillScreenString i
+      numTrials = 20 -- 99
   --let charAt x y = fillScreenString !! (x + y * wid)
   --let row y = V.generate wid (\x -> charAt x y)
 {-
@@ -101,16 +102,16 @@ speedTests = do
               charAt x y = s !! (x + y * wid)
       fillScreenV2 = stringToV2 fillScreenString
       rah i = stringToV2 (drop i (cycle fillScreenString))
-      fillScreenV2s = map rah [0..99]
+      fillScreenV2s = map rah [0..numTrials]
 -}
-  --time "putStr String" $ mapM_ (foo fillScreen) [0..99]
-  wsResult <- timeList "writeStrngs" (map writeString (map fillScreenString [0..99])) 1
-  wsResult2 <- timeList "writeStrngs2" (map writeString (map fillScreenString [0..99])) 1
-  let verp = (map fillScreenString [0..99])
+  --time "putStr String" $ mapM_ (foo fillScreen) [0..numTrials]
+  wsResult <- timeList "writeStrngs" (map writeString (map fillScreenString [0..numTrials])) 1
+  wsResult2 <- timeList "writeStrngs2" (map writeString (map fillScreenString [0..numTrials])) 1
+  let verp = (map fillScreenString [0..numTrials])
   wsResult3 <- timeList "writeStrngs2" (map writeString verp) 1
   wsResult4 <- timeList "writeStrngs2" (map writeString verp) 1
-  wscResult <- timeList "writeStringConvert" (map writeStringConvert (map fillScreenString [0..99])) 1
-  wscResult2 <- timeList "writeStringConvert" (map writeStringConvert (map fillScreenString [0..99])) 1
+  wscResult <- timeList "writeStringConvert" (map writeStringConvert (map fillScreenString [0..numTrials])) 1
+  wscResult2 <- timeList "writeStringConvert" (map writeStringConvert (map fillScreenString [0..numTrials])) 1
   let verp2 = (map fillScreenString [0..99])
   wscResult3 <- timeList "writeStringConvert" (map writeStringConvert verp2) 1
   wscResult4 <- timeList "writeStringConvert" (map writeStringConvert verp2) 1
