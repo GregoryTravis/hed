@@ -24,6 +24,7 @@ import Data.Vector (Vector, (!))
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Foreign.C.String as FCS
+import qualified Foreign.C.Types as FT
 import Foreign.Storable (peek, peekElemOff, poke, pokeElemOff)
 import System.Console.ANSI
 import System.IO
@@ -88,13 +89,14 @@ randPoint maxX maxY = do
 
 -- String -> CString -> Ptr CChar, then pack it into a bytestring and write it
 
-data QRect = QRect (Int, Int) (Int, Int)
+data QRect = QRect FT.CChar (Int, Int) (Int, Int)
 makeQRect = do
+  c <- rnd 65 (97+25)
   x <- rnd 50 150
   y <- rnd 15 45
   dx <- rnd (-1) 1
   dy <- rnd (-1) 1
-  return $ QRect (x, y) (dx, dy)
+  return $ QRect c (x, y) (dx, dy)
 
 rnd lo hi = getStdRandom (randomR (lo, hi))
 makeQRects n = mapM (const makeQRect) [0..n-1]
@@ -111,18 +113,19 @@ drawIntoStringSpeedTests = do
 
 nsy = [0..9]
 
-drawBox x y wid buf = do
+drawBox :: FT.CChar -> Int -> Int -> Int -> FCS.CString -> IO ()
+drawBox c x y wid buf = do
   let tl = x + (y * wid)
       boxHeight = 3
   flip mapM [0..boxHeight-1] $ \y -> do
     flip mapM nsy $ \x -> do
       let off = tl + x + (wid * y)
-      pokeElemOff buf off 97
+      pokeElemOff buf off c
   return ()
 
 drawBox' :: QRect -> Int -> Int -> FCS.CString -> IO ()
-drawBox' (QRect (x, y) (dx, dy)) t wid buf = do
-  drawBox x' y' wid buf
+drawBox' (QRect c (x, y) (dx, dy)) t wid buf = do
+  drawBox c x' y' wid buf
   return ()
   where x' = x + ((t * dx) `mod` 40)
         y' = y + ((t * dy) `mod` 10)
