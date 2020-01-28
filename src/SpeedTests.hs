@@ -88,11 +88,22 @@ randPoint maxX maxY = do
 
 -- String -> CString -> Ptr CChar, then pack it into a bytestring and write it
 
+data QRect = QRect (Int, Int) (Int, Int)
+makeQRect = do
+  x <- rnd 50 150
+  y <- rnd 15 45
+  dx <- rnd (-1) 1
+  dy <- rnd (-1) 1
+  return $ QRect (x, y) (dx, dy)
+
+rnd lo hi = getStdRandom (randomR (lo, hi))
+makeQRects n = mapM (const makeQRect) [0..n-1]
+
 drawIntoStringSpeedTests = do
   Just (ht, wid) <- getTerminalSize
   let fillScreenString = take (wid * (ht-0) - 0) (repeat '.')
       --fillScreenText i = T.pack $ fillScreenString i
-  FCS.withCString fillScreenString (dISS2 wid (length fillScreenString))
+  FCS.withCString fillScreenString (dISS2 wid ht (length fillScreenString))
   -- setCursorPosition 0 0
   -- timing <- time "put text" $ IO.hPutStr stdout $ T.pack s
   -- hFlush stdout
@@ -100,23 +111,38 @@ drawIntoStringSpeedTests = do
 
 nsy = [0..9]
 
-drawBox wid buf = do
-  let tl = 20 + (20 * wid)
+drawBox x y wid buf = do
+  let tl = x + (y * wid)
       boxHeight = 3
   flip mapM [0..boxHeight-1] $ \y -> do
     flip mapM nsy $ \x -> do
       let off = tl + x + (wid * y)
       pokeElemOff buf off 97
+  return ()
 
-drawBoxes wid cString len = do
-  flip mapM [0..99] $ const $ drawBox wid cString
+drawBox' :: QRect -> Int -> Int -> FCS.CString -> IO ()
+drawBox' (QRect (x, y) (dx, dy)) t wid buf = do
+  drawBox x' y' wid buf
+  return ()
+  where x' = x + ((t * dx) `mod` 40)
+        y' = y + ((t * dy) `mod` 10)
+
+clear cString len = do
+  flip mapM [0..len-1] $ \offset -> pokeElemOff cString offset 32
+
+drawBoxes :: [QRect] -> Int -> Int -> FCS.CString -> Int -> IO ()
+drawBoxes boxes t wid cString len = do
+  clear cString len
+  mapM (\r -> drawBox' r t wid cString) boxes
+  --flip mapM [0..99] $ const $ drawBox wid cString
   let cl = (cString, len)
   t <- TF.peekCStringLen cl
   setCursorPosition 0 0
   IO.putStr t
   hFlush stdout
 
-dISS2 wid len cString = do
+dISS2 :: Int -> Int -> Int -> FCS.CString -> IO ()
+dISS2 wid ht len cString = do
   clearScreen
   -- x <- peek cString
   -- x' <- peekElemOff cString 0
@@ -132,9 +158,23 @@ dISS2 wid len cString = do
   -- pokeElemOff cString 1 116
   -- t' <- TF.peekCStringLen cl
   -- IO.putStr t'
-  report <- timeN "screen" (drawBoxes wid cString len) 1000
+  rects <- makeQRects 120
+  --report <- timeN "screen" (drawBoxes wid cString len) 1000
+  let loop t = do
+        drawBoxes rects t wid cString len
+        setCursorPosition 0 0
+        msp t
+        hFlush stdout
+        threadDelay 5000
+        if t < 4000000
+           then loop (t+1)
+           else return ()
+  loop 0
+  -- setCursorPosition 0 0
+  -- putStrLn report
+  -- hFlush stdout
   setCursorPosition 0 0
-  putStrLn report
+  msp ("scrn", wid, ht)
   hFlush stdout
   threadDelay 10000000
 
