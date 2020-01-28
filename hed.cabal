@@ -29,5 +29,6 @@ executable hed
                        random,
                        split,
                        text,
+                       time,
                        unix,
                        vector

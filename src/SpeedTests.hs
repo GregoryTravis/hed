@@ -4,6 +4,7 @@ module SpeedTests ( speedTests ) where
 
 import Control.Concurrent (threadDelay)
 import Control.Exception (finally, catch, IOException)
+import Control.Monad.State
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
@@ -14,6 +15,7 @@ import Data.Char (chr, ord)
 import Data.Monoid
 import qualified Data.List as L
 import qualified Data.Text as T
+import qualified Data.Text.Foreign as TF (peekCStringLen)
 import qualified Data.Text.IO as IO
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text.Lazy as TL
@@ -21,7 +23,8 @@ import qualified Data.Text.Lazy.Builder as TB
 import Data.Vector (Vector, (!))
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
-import Control.Monad.State
+import qualified Foreign.C.String as FCS
+import Foreign.Storable (peek, peekElemOff, poke, pokeElemOff)
 import System.Console.ANSI
 import System.IO
 import System.Posix.IO (fdRead, stdInput)
@@ -83,10 +86,67 @@ randPoint maxX maxY = do
   y <- getStdRandom (randomR (0, maxY))
   return (x, y)
 
+-- String -> CString -> Ptr CChar, then pack it into a bytestring and write it
+
+drawIntoStringSpeedTests = do
+  Just (ht, wid) <- getTerminalSize
+  let fillScreenString = take (wid * (ht-0) - 0) (repeat '.')
+      --fillScreenText i = T.pack $ fillScreenString i
+  FCS.withCString fillScreenString (dISS2 wid (length fillScreenString))
+  -- setCursorPosition 0 0
+  -- timing <- time "put text" $ IO.hPutStr stdout $ T.pack s
+  -- hFlush stdout
+  -- msp timing
+
+nsy = [0..9]
+
+drawBox wid buf = do
+  let tl = 20 + (20 * wid)
+      boxHeight = 3
+  flip mapM [0..boxHeight-1] $ \y -> do
+    flip mapM nsy $ \x -> do
+      let off = tl + x + (wid * y)
+      pokeElemOff buf off 97
+
+drawBoxes wid cString len = do
+  flip mapM [0..99] $ const $ drawBox wid cString
+  let cl = (cString, len)
+  t <- TF.peekCStringLen cl
+  setCursorPosition 0 0
+  IO.putStr t
+  hFlush stdout
+
+dISS2 wid len cString = do
+  clearScreen
+  -- x <- peek cString
+  -- x' <- peekElemOff cString 0
+  -- x'' <- peekElemOff cString 1
+  -- msp x
+  -- msp x'
+  -- msp x''
+  -- let cl = (cString, len)
+  -- t <- TF.peekCStringLen cl
+  -- IO.putStr t
+  -- msp "ho"
+  -- msp "ho"
+  -- pokeElemOff cString 1 116
+  -- t' <- TF.peekCStringLen cl
+  -- IO.putStr t'
+  report <- timeN "screen" (drawBoxes wid cString len) 1000
+  setCursorPosition 0 0
+  putStrLn report
+  hFlush stdout
+  threadDelay 10000000
+
 speedTests = do
-  --rectangles
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout (BlockBuffering Nothing)
+  --writeStringSpeedTests
+  --rectangles
+  drawIntoStringSpeedTests
+  msp "sthi"
+
+writeStringSpeedTests = do
   Just (wid, ht) <- getTerminalSize
   t <- IO.readFile "uni.txt"
   let noSpaces = L.filter ('\n' /=) $ L.filter (' ' /=) $ T.unpack t
