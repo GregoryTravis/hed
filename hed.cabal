@@ -26,6 +26,7 @@ executable hed
                        linear,
                        mtl,
                        pretty-simple,
+                       random,
                        split,
                        text,
                        unix,

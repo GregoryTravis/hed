@@ -1,3 +1,5 @@
+{-# LANGUAGE BlockArguments #-}
+
 module SpeedTests ( speedTests ) where
 
 import Control.Concurrent (threadDelay)
@@ -24,10 +26,65 @@ import System.Console.ANSI
 import System.IO
 import System.Posix.IO (fdRead, stdInput)
 import System.Posix.Terminal
+import System.Random
 
 import Util
 
+rectSize = (8, 3)
+topBot = "+" ++ (take ((fst rectSize) - 2) (repeat '-')) ++ "+"
+leftRight = "|" ++ (take ((fst rectSize) - 2) (repeat '.')) ++ "|"
+rect :: [String]
+rect = [topBot] ++ mids ++ [topBot]
+  where mids = take ((snd rectSize) - 2) $ repeat leftRight
+numRects = 100
+data Rect = Rect (Int, Int) (Int, Int) deriving Show
+
+rectangles :: IO ()
+rectangles = do
+  Just (ht, wid) <- getTerminalSize
+  msp ("ah", wid, ht)
+  rects <- makeRects wid ht
+  msp rects
+  let dt = 0.01
+  --clearScreen
+  let loop t = do
+        clearScreen
+        mapM (drawRect t) rects
+        hFlush stdout
+        threadDelay 20000
+        loop (t + dt)
+        where drawRect t (Rect (x0, y0) (x1, y1)) = drawRectAt x y
+                where x = floor $ (fromIntegral x0) + ((fromIntegral (x1 - x0)) * ct)
+                      y = floor $ (fromIntegral y0) + ((fromIntegral (y1 - y0)) * ct)
+                      ct = t - (fromIntegral (floor t))
+  loop 0
+
+drawRectAt :: Int -> Int -> IO ()
+drawRectAt x y =
+  let drawRectLine :: (Int, String) -> IO ()
+      drawRectLine (i, s) = do
+        setCursorPosition (y+i) x
+        --IO.hPutStr stdout s
+        putStr s
+        --msp ("ah", x, y, i)
+   in mapM_ drawRectLine (zip [0..] rect)
+
+makeRects :: Int -> Int -> IO [Rect]
+makeRects wid ht = mapM (const (makeRect wid ht)) [0..numRects-1]
+makeRect :: Int -> Int -> IO Rect
+makeRect wid ht = do
+  a <- randPoint (wid - (fst rectSize) - 1) (ht - (snd rectSize) - 1)
+  b <- randPoint (wid - (fst rectSize) - 1) (ht - (snd rectSize) - 1)
+  return $ Rect a b
+
+randPoint :: Int -> Int -> IO (Int, Int)
+randPoint maxX maxY = do
+  x <- getStdRandom (randomR (0, maxX))
+  y <- getStdRandom (randomR (0, maxY))
+  return (x, y)
+
 speedTests = do
+  --rectangles
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout (BlockBuffering Nothing)
   Just (wid, ht) <- getTerminalSize

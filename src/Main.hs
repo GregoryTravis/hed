@@ -20,6 +20,7 @@ import GOL
 import Layout
 import Process
 import SizeReport
+import SpeedTests
 import State
 import Types
 import Util
@@ -111,6 +112,7 @@ saveCurrentBuffer = do
   io $ saveFile name contents
 
 main :: IO ()
+--main = speedTests
 main = stateMain initEditorState $ do
   openFile "uni.txt"
   openFile "gol.txt"
