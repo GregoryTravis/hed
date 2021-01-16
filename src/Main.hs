@@ -108,7 +108,7 @@ eventLoop eventChan = forever $ do
 
 saveCurrentBuffer = do
   es <- get
-  let (name, Buffer { bufferContents = contents }) = currentBufAndNAme es
+  let (name, Buffer { bufferContents = contents }) = currentBufAndName es
   io $ saveFile name contents
 
 main :: IO ()

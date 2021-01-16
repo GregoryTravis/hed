@@ -15,7 +15,7 @@ module Layout
 , getAbsoluteCusorPos
 , insertChar
 , deleteChar
-, currentBufAndNAme
+, currentBufAndName
 ) where
 
 import Data.List (find)
@@ -137,7 +137,7 @@ getAbsoluteCusorPos es = do
       (dx, dy) = textCursorPosToXY es (currentWindowId es) cursorPos
    in (x + dx - ox, y + dy - oy)
 
-currentBufAndNAme es = (name, buffers es M.! name)
+currentBufAndName es = (name, buffers es M.! name)
   where Window _ name _ _ = currentWindow es
 
 currentBuf es = buffers es M.! name
