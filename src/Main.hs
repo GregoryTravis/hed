@@ -11,6 +11,7 @@ module Main where
 -- import System.Exit
 -- import System.IO hiding (openFile)
 import System.Console.ANSI
+import Data.Text
 
 import Control
 import Util
@@ -20,6 +21,7 @@ main = withTerminalSetup main'
 
 main' :: IO ()
 main' = do
-  setCursorPosition 0 0
-  msp "hey"
+  clearScreen
+  setCursorPosition 20 20
+  msp $ pack "hey"
   sleep 100
