@@ -1,17 +1,8 @@
 module Control
-( io
-, stateMain
-, withSignalHandler
-, withBackgroundThread
-, withRawInput
-, withWindowChangeHandler
-, withStdoutBuffering
-, EditorState(..)
-, ESAction
+( withTerminalSetup
 ) where
 
-import Control.Concurrent
-import Control.Exception (finally, catch, bracket, AsyncException(..))
+import Control.Exception (finally, catch, bracket)
 import Control.Monad.IO.Class
 import Control.Monad.State
 import System.IO
@@ -20,19 +11,7 @@ import System.Posix.Signals
 import System.Posix.Signals.Exts
 import System.Posix.Terminal
 
-import State
-import Types
 import Util
-
-stateMain :: t -> StateT t IO () -> IO ()
-stateMain initState main = runStateT main initState >> return ()
-
-{-
-finallyStateT :: StateT t IO a -> StateT t IO b -> StateT t IO a 
-finallyStateT a b = do
-  s <- get
-  liftIO $ runStateT s a `finally` runStateT s
--}
 
 withSignalHandler :: Signal -> IO () -> IO a -> IO a
 withSignalHandler signal handlerIO io = bracket install uninstall (\_ -> io)
@@ -40,27 +19,15 @@ withSignalHandler signal handlerIO io = bracket install uninstall (\_ -> io)
         uninstall originalHandler = do msp "uninstall"
                                        installHandler signal originalHandler Nothing
 
-transformAsIO :: ESAction a -> (IO a -> IO a) -> ESAction a
-transformAsIO esAction iot = do
-  s <- get
-  io $ iot $ runStateT esAction s >>= (\(a, s) -> return a)
-
-withWindowChangeHandler :: IO () -> ESAction a -> ESAction a
-withWindowChangeHandler handler action = transformAsIO action wrap
-  where wrap ioAction = withSignalHandler windowChange handler ioAction
-
-withBackgroundThread :: IO () -> ESAction a -> ESAction a
-withBackgroundThread backgroundIO action = transformAsIO action wrap
-  where wrap ioAction = bracket (forkIO backgroundIO) killThread' (\_ -> ioAction)
-        killThread' tid = do msp "killThread"
-                             killThread tid
+withWindowChangeHandler :: IO () -> IO a -> IO a
+withWindowChangeHandler handler action = withSignalHandler windowChange handler action
 
 -- Taken from https://stackoverflow.com/questions/23068218/haskell-read-raw-keyboard-input/36297897#36297897
-withRawInput :: Int -> Int -> ESAction a -> ESAction a
-withRawInput vmin vtime application = do
+withRawInput :: Int -> Int -> IO a -> IO a
+withRawInput vmin vtime action = do
 
   {- retrieve current settings -}
-  oldTermSettings <- io $ getTerminalAttributes stdInput
+  oldTermSettings <- getTerminalAttributes stdInput
 
   {- modify settings -}
   let newTermSettings = 
@@ -75,12 +42,12 @@ withRawInput vmin vtime application = do
                   return ()
 
   {- install new settings -}
-  io $ setTerminalAttributes stdInput newTermSettings Immediately
+  setTerminalAttributes stdInput newTermSettings Immediately
 
   {- restore old settings no matter what; this prevents the terminal
-   - from becoming borked if the application halts with an exception
+   - from becoming borked if the action halts with an exception
    -}
-  transformAsIO application $ \io -> io `finally` revert
+  action `finally` revert
 
 withStdoutBuffering :: BufferMode -> IO a -> IO a
 withStdoutBuffering mode action = do
@@ -89,3 +56,11 @@ withStdoutBuffering mode action = do
   a <- action
   hSetBuffering stdout oldMode
   return a
+
+withTerminalSetup :: IO a -> IO a
+withTerminalSetup action = do
+  hSetBuffering stdin NoBuffering
+  -- hSetBuffering stdout NoBuffering
+  let wri = withRawInput 0 1
+      wct = withWindowChangeHandler (msp "windowChange!")
+  (wri . wct) action
