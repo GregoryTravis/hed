@@ -19,9 +19,11 @@ import Util
 main :: IO ()
 main = withTerminalSetup main'
 
-main' :: IO ()
-main' = do
+main' :: (Int, Int) -> IO ()
+main' terminalSize = do
   clearScreen
   setCursorPosition 20 20
   msp $ pack "hey"
+  setCursorPosition 30 30
+  msp $ pack (show terminalSize)
   sleep 100

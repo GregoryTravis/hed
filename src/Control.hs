@@ -5,6 +5,7 @@ module Control
 import Control.Exception (finally, catch, bracket)
 import Control.Monad.IO.Class
 import Control.Monad.State
+import System.Console.ANSI
 import System.IO
 import System.Posix.IO (stdInput)
 import System.Posix.Signals
@@ -57,10 +58,25 @@ withStdoutBuffering mode action = do
   hSetBuffering stdout oldMode
   return a
 
-withTerminalSetup :: IO a -> IO a
+initialDelay = 0.001
+
+-- Returns in (w, h) order, unlike ansi-terminal
+getTerminalSizeOrDieTrying :: IO (Int, Int)
+getTerminalSizeOrDieTrying = go initialDelay 10
+  where go delay 0 = error "Cannot get terminal size"
+        go delay triesLeft = do
+          msp ("Trying to get terminal size", delay, triesLeft)
+          maybeTerminalSize <- getTerminalSize
+          case maybeTerminalSize
+            of Nothing -> go (delay * 2) (triesLeft - 1)
+               Just (h, w) -> return (w, h)
+
+-- The action takes the initial screen size (w, h)
+withTerminalSetup :: ((Int, Int) -> IO a) -> IO a
 withTerminalSetup action = do
+  terminalSize <- getTerminalSizeOrDieTrying
   hSetBuffering stdin NoBuffering
   -- hSetBuffering stdout NoBuffering
   let wri = withRawInput 0 1
       wct = withWindowChangeHandler (msp "windowChange!")
-  (wri . wct) action
+  (wri . wct) (action terminalSize)
