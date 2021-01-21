@@ -13,7 +13,7 @@ module Main where
 import System.Console.ANSI
 import Data.Text
 
-import Control
+import Ansi
 import Util
 
 main :: IO ()

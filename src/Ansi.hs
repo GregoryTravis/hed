@@ -1,4 +1,4 @@
-module Control
+module Ansi
 ( withTerminalSetup
 ) where
 
