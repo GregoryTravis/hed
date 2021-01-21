@@ -28,6 +28,7 @@ module Util
 , wallTime
 , time
 , cpuTime
+, perSec
 , unsafeTime
 , noBuffering
 , die
@@ -212,6 +213,21 @@ cpuTime action = do
   afterPicoseconds <- getCPUTime
   let duration = (fromIntegral (afterPicoseconds - beforePicoseconds)) / 1_000_000_000_000.0
   return (x, duration)
+
+-- How many times per second?
+perSec :: Int -> IO () -> IO Double
+perSec n action = do
+  ((), duration) <- cpuTime (repeatM n action)
+  return $ (fromIntegral n) / duration
+
+-- Repeat action n times
+repeatM :: Int -> IO () -> IO ()
+repeatM 0 _ = return ()
+repeatM n action = loop n
+  where loop 0 = return ()
+        loop n = do
+          action
+          loop (n - 1)
 
 unsafeTime :: String -> a -> a
 unsafeTime s x = unsafePerformIO (time s (return x))

@@ -14,9 +14,14 @@ cabal-version:       >=1.10
 --extra-source-files:  README.md
 
 executable hed
+  ghc-options:
+        -O2
+        -- -threaded
+        -- -rtsopts
+        -- "-with-rtsopts=-N -H1g"
   hs-source-dirs:      src
   main-is:             Main.hs
-  other-modules:       Ansi, Util
+  other-modules:       Ansi, Util, SpeedTest
   default-language:    Haskell2010
   ghc-options:         -threaded
   build-depends:       base >= 4.7 && < 5,
