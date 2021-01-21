@@ -1,7 +1,6 @@
 module Buffer
 ( Buffer(..)
-, Rendering
-, gridToRendering ) where
+, Rendering ) where
 
 import Data.Text hiding (map)
 import qualified Data.Vector as V
