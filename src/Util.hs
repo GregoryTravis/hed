@@ -82,7 +82,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust)
 import Data.Text (unpack)
 import Data.Text.Lazy (toStrict)
-import Data.Time.Clock (diffUTCTime)
+import Data.Time.Clock (diffUTCTime, NominalDiffTime)
 import Data.Time.Clock.System (getSystemTime, systemToUTCTime)
 import Data.Tuple (swap)
 import Data.Typeable (typeOf)
@@ -190,14 +190,13 @@ mcompose f g x = case g x of Just y -> f y
                              Nothing -> Nothing
 
 -- Taken from https://wiki.haskell.org/Timing_computations
-wallTime :: String -> IO t -> IO t
-wallTime s a = do
+wallTime :: IO a -> IO (a, Double)
+wallTime action = do
     start <- getSystemTime
-    v <- a
+    v <- action
     end <- getSystemTime
-    let diff = (systemToUTCTime end) `diffUTCTime` (systemToUTCTime start)
-    printf "%s %s\n" s (show diff)
-    return v
+    let diffF = realToFrac $ (systemToUTCTime end) `diffUTCTime` (systemToUTCTime start)
+    return (v, diffF)
 
 time :: String -> IO t -> IO t
 time s a = do
@@ -217,7 +216,7 @@ cpuTime action = do
 -- How many times per second?
 perSec :: Int -> IO () -> IO Double
 perSec n action = do
-  ((), duration) <- cpuTime (repeatM n action)
+  ((), duration) <- wallTime (repeatM n action)
   return $ (fromIntegral n) / duration
 
 -- Repeat action n times
